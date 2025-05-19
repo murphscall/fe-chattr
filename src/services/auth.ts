@@ -79,7 +79,7 @@ export async function logout(): Promise<void> {
 // 현재 사용자 정보 가져오기
 export async function getCurrentUser(): Promise<User | null> {
     try {
-        const response = await fetch("http:localhost:8080/api/users/me", {
+        const response = await fetch("http://localhost:8080/api/users/me", {
             credentials: "include",
         })
 
