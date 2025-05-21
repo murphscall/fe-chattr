@@ -4,41 +4,66 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import styled from "styled-components"
 import type { User, ChatRoom, ChatCategory } from "../types"
+import { CATEGORY_TO_TOPIC_MAP } from "../types"
 import Header from "../components/Header"
-import { Plus, Search, Users, Zap, MessageSquare, X, Hash } from "lucide-react"
+import { Plus, Search, Users, Zap, MessageSquare, X, Hash, Loader } from "lucide-react"
 import { formatTime } from "../utils"
+import LoadingSpinner from "../components/LoadingSpinner"
 
+// onCreateChatRoom 프로퍼티 타입 수정
 interface ChatListPageProps {
   user: User
   chatRooms: ChatRoom[]
-  onCreateChatRoom: (name: string, category: string) => void
+  isLoading?: boolean
+  onCreateChatRoom: (name: string, category: string, description?: string | null) => void
   onJoinChatRoom: (roomId: string) => void
   onLogout: () => void
 }
 
+// 프론트엔드에서 사용자에게 보여줄 카테고리 목록
 const CATEGORIES: ChatCategory[] = [
-  "일상",
-  "게임",
-  "음악",
-  "영화",
+  "일반 대화",
+  "공부/학업",
+  "업무/프로젝트",
   "스포츠",
+  "영화/드라마",
+  "음악",
+  "게임",
+  "기술/개발",
   "여행",
-  "음식",
+  "음식/맛집",
+  "반려동물",
   "패션",
-  "IT/기술",
-  "취업/진로",
-  "학교/학원",
+  "뷰티/화장",
+  "건강/운동",
+  "연애/인간관계",
+  "재테크",
+  "독서",
+  "예술/그림",
+  "취미",
+  "언어 교환",
+  "진로/취업",
+  "성인",
   "기타",
 ]
 
-const ChatListPage = ({ user, chatRooms, onCreateChatRoom, onJoinChatRoom, onLogout }: ChatListPageProps) => {
+const ChatListPage = ({
+                        user,
+                        chatRooms,
+                        isLoading = false,
+                        onCreateChatRoom,
+                        onJoinChatRoom,
+                        onLogout,
+                      }: ChatListPageProps) => {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState("")
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newRoomName, setNewRoomName] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<ChatCategory>("일상")
+  const [newRoomDescription, setNewRoomDescription] = useState("") // 채팅방 소개 상태 추가
+  const [selectedCategory, setSelectedCategory] = useState<ChatCategory>("일반 대화")
   const [activeTab, setActiveTab] = useState<"my" | "hot" | "all">("my")
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<ChatCategory | "전체">("전체")
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false)
 
   // 내 채팅방 (사용자가 참여 중인 채팅방)
   const myRooms = chatRooms.filter(
@@ -71,12 +96,37 @@ const ChatListPage = ({ user, chatRooms, onCreateChatRoom, onJoinChatRoom, onLog
     navigate(`/chat/${roomId}`)
   }
 
-  const handleCreateRoom = () => {
+  // handleCreateRoom 함수를 수정하여 description 처리를 개선합니다
+  const handleCreateRoom = async () => {
     if (newRoomName.trim()) {
-      onCreateChatRoom(newRoomName.trim(), selectedCategory)
-      setNewRoomName("")
-      setSelectedCategory("일상")
-      setShowCreateModal(false)
+      try {
+        setIsCreatingRoom(true)
+
+        // 한글 카테고리를 백엔드 enum 값으로 변환
+        const topicValue = CATEGORY_TO_TOPIC_MAP[selectedCategory]
+
+        // description이 빈 문자열인 경우 null로 처리
+        const descriptionValue = newRoomName.trim() ? newRoomDescription.trim() : null
+
+        console.log("채팅방 생성 시도:", {
+          name: newRoomName.trim(),
+          topic: topicValue,
+          description: descriptionValue,
+        })
+
+        // 백엔드 API 요청 시 영어 enum 값 전송
+        await onCreateChatRoom(newRoomName.trim(), topicValue, descriptionValue)
+
+        setNewRoomName("")
+        setNewRoomDescription("")
+        setSelectedCategory("일반 대화")
+        setShowCreateModal(false)
+      } catch (error) {
+        console.error("채팅방 생성 중 오류 발생:", error)
+        alert("채팅방 생성에 실패했습니다. 다시 시도해주세요.")
+      } finally {
+        setIsCreatingRoom(false)
+      }
     }
   }
 
@@ -135,7 +185,12 @@ const ChatListPage = ({ user, chatRooms, onCreateChatRoom, onJoinChatRoom, onLog
             </CategoryFilter>
           </SearchAndFilterContainer>
 
-          {filteredRooms.length > 0 ? (
+          {isLoading ? (
+              <LoadingContainer>
+                <LoadingSpinner size={40} />
+                <LoadingText>채팅방 목록을 불러오는 중...</LoadingText>
+              </LoadingContainer>
+          ) : filteredRooms.length > 0 ? (
               <RoomList>
                 {filteredRooms.map((room) => (
                     <RoomItem key={room.id} onClick={() => handleRoomClick(room.id)}>
@@ -158,6 +213,7 @@ const ChatListPage = ({ user, chatRooms, onCreateChatRoom, onJoinChatRoom, onLog
                             {room.participantsCount}명 참여 중
                           </ParticipantsCount>
                         </RoomDetails>
+                        {room.description && <RoomDescription>{room.description}</RoomDescription>}
                         {room.lastMessage && <LastMessage>{room.lastMessage.content}</LastMessage>}
                       </RoomInfo>
                       {room.lastMessage && <TimeStamp>{formatTime(room.lastMessage.timestamp)}</TimeStamp>}
@@ -194,6 +250,20 @@ const ChatListPage = ({ user, chatRooms, onCreateChatRoom, onJoinChatRoom, onLog
                       value={newRoomName}
                       onChange={(e) => setNewRoomName(e.target.value)}
                       autoFocus
+                      maxLength={50}
+                  />
+                  {newRoomName.length > 0 && (
+                      <CharacterCount isLimit={newRoomName.length >= 50}>{newRoomName.length}/50</CharacterCount>
+                  )}
+                </ModalInputGroup>
+
+                <ModalInputGroup>
+                  <ModalLabel>채팅방 소개</ModalLabel>
+                  <ModalTextarea
+                      placeholder="채팅방에 대한 소개를 입력하세요 (선택사항)"
+                      value={newRoomDescription}
+                      onChange={(e) => setNewRoomDescription(e.target.value)}
+                      rows={3}
                   />
                 </ModalInputGroup>
 
@@ -213,9 +283,18 @@ const ChatListPage = ({ user, chatRooms, onCreateChatRoom, onJoinChatRoom, onLog
                 </ModalInputGroup>
 
                 <ModalButtons>
-                  <CancelButton onClick={() => setShowCreateModal(false)}>취소</CancelButton>
-                  <CreateRoomButton onClick={handleCreateRoom} disabled={!newRoomName.trim()}>
-                    만들기
+                  <CancelButton onClick={() => setShowCreateModal(false)} disabled={isCreatingRoom}>
+                    취소
+                  </CancelButton>
+                  <CreateRoomButton onClick={handleCreateRoom} disabled={!newRoomName.trim() || isCreatingRoom}>
+                    {isCreatingRoom ? (
+                        <>
+                          <Loader size={16} className="animate-spin" />
+                          생성 중...
+                        </>
+                    ) : (
+                        "만들기"
+                    )}
                   </CreateRoomButton>
                 </ModalButtons>
               </Modal>
@@ -360,6 +439,20 @@ const CategorySelect = styled.select`
   }
 `
 
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 0;
+  gap: 1rem;
+`
+
+const LoadingText = styled.p`
+  color: ${({ theme }) => theme.colors.textLight};
+  font-size: 1rem;
+`
+
 const RoomList = styled.div`
   display: flex;
   flex-direction: column;
@@ -437,6 +530,17 @@ const ParticipantsCount = styled.span`
   gap: 0.25rem;
   font-size: 0.75rem;
   color: ${({ theme }) => theme.colors.textLight};
+`
+
+const RoomDescription = styled.p`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.textLight};
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 `
 
 const LastMessage = styled.p`
@@ -542,6 +646,8 @@ const CategoryGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
   
   @media (min-width: ${({ theme }) => theme.breakpoints.tablet}) {
     grid-template-columns: repeat(4, 1fr);
@@ -580,12 +686,21 @@ const CancelButton = styled.button`
   color: ${({ theme }) => theme.colors.textLight};
   transition: background-color 0.2s;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: ${({ theme }) => theme.colors.border};
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `
 
 const CreateRoomButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   padding: 0.6rem 1rem;
   border-radius: 8px;
   font-size: 0.9rem;
@@ -601,6 +716,30 @@ const CreateRoomButton = styled.button`
     opacity: 0.6;
     cursor: not-allowed;
   }
+`
+
+const ModalTextarea = styled.textarea`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+
+  &:focus {
+    outline: none;
+    border-color: #4285f4;
+    box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.15);
+  }
+`
+
+const CharacterCount = styled.div<{ isLimit: boolean }>`
+  text-align: right;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  color: ${({ isLimit }) => (isLimit ? "#ef4444" : "#9ca3af")};
 `
 
 export default ChatListPage

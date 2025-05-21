@@ -5,7 +5,7 @@ import { ThemeProvider } from "styled-components"
 import { GlobalStyle } from "./styles/GlobalStyle"
 import { theme } from "./styles/theme"
 import type { Message, ChatRoom } from "./types"
-import { dummyChatRooms, dummyMessages } from "./dummyData" // 더미 데이터 임포트
+import { dummyChatRooms } from "./dummyData" // 더미 데이터 임포트 (백업용)
 import { useState, useEffect } from "react"
 import { useAuth } from "./hooks/useAuth"
 import * as chatService from "./services/chat"
@@ -21,9 +21,10 @@ import LoadingSpinner from "./components/LoadingSpinner"
 
 function App() {
     const { user, loading, login, logout, register } = useAuth()
-    const [chatRooms, setChatRooms] = useState<ChatRoom[]>(dummyChatRooms) // 더미 데이터 사용
-    const [messages, setMessages] = useState<Record<string, Message[]>>(dummyMessages) // 더미 데이터 사용
+    const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]) // 빈 배열로 초기화
+    const [messages, setMessages] = useState<Record<string, Message[]>>({}) // 빈 객체로 초기화
     const [isAppLoading, setIsAppLoading] = useState(true)
+    const [isChatsLoading, setIsChatsLoading] = useState(false) // 채팅방 목록 로딩 상태 추가
 
     // 페이지 전환 시 스크롤 위치 초기화
     useEffect(() => {
@@ -46,19 +47,27 @@ function App() {
         }
     }, [loading])
 
+    // 채팅방 목록 가져오기
+    const fetchChatRooms = async () => {
+        if (!user) return
+
+        try {
+            setIsChatsLoading(true)
+            const rooms = await chatService.getChatRooms()
+            setChatRooms(rooms)
+        } catch (error) {
+            console.error("채팅방 목록을 가져오는데 실패했습니다:", error)
+            // 오류 발생 시 더미 데이터로 폴백 (개발 중에만 사용)
+            setChatRooms(dummyChatRooms)
+        } finally {
+            setIsChatsLoading(false)
+        }
+    }
+
     useEffect(() => {
         if (!user) return
 
         // 채팅방 목록 가져오기
-        const fetchChatRooms = async () => {
-            try {
-                const rooms = await chatService.getChatRooms()
-                setChatRooms(rooms)
-            } catch (error) {
-                console.error("채팅방 목록을 가져오는데 실패했습니다:", error)
-            }
-        }
-
         fetchChatRooms()
 
         // 실시간 메시지 수신을 위한 웹소켓 연결 설정
@@ -140,13 +149,22 @@ function App() {
         }
     }
 
-    const handleCreateChatRoom = async (name: string, category: string) => {
+    // handleCreateChatRoom 함수 수정
+    const handleCreateChatRoom = async (name: string, category: string, description?: string | null) => {
         if (!user) return
 
         try {
+            console.log("App.tsx에서 채팅방 생성 요청:", { name, category, description })
+
             // API 요청: 채팅방 생성
-            const createdRoom = await chatService.createChatRoom(name, category)
+            const createdRoom = await chatService.createChatRoom(name, category, description || undefined)
+
+            // 채팅방 목록에 새 채팅방 추가
             setChatRooms((prev) => [...prev, createdRoom])
+
+            // 채팅방 목록 새로고침
+            fetchChatRooms()
+
             return createdRoom.id
         } catch (error) {
             console.error("채팅방 생성 오류:", error)
@@ -155,9 +173,10 @@ function App() {
             const newRoom: ChatRoom = {
                 id: Date.now().toString(),
                 name,
+                description: description || undefined,
                 createdBy: user.userId,
                 participants: [user],
-                category: category || "일상",
+                category: category || "일반 대화",
                 participantsCount: 1,
                 isHot: false,
             }
@@ -181,9 +200,8 @@ function App() {
                 [roomId]: messagesData,
             }))
 
-            // 채팅방 목록 업데이트
-            const roomsData = await chatService.getChatRooms()
-            setChatRooms(roomsData)
+            // 채팅방 목록 새로고침
+            fetchChatRooms()
         } catch (error) {
             console.error("채팅방 참여 오류:", error)
 
@@ -253,6 +271,7 @@ function App() {
                                 <ChatListPage
                                     user={user}
                                     chatRooms={chatRooms}
+                                    isLoading={isChatsLoading}
                                     onCreateChatRoom={handleCreateChatRoom}
                                     onJoinChatRoom={handleJoinChatRoom}
                                     onLogout={logout}
