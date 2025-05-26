@@ -1,14 +1,18 @@
-import React from 'react'
-import {useNavigate} from 'react-router-dom'
-import {AuthContext, useAuth} from "../context/AuthContext.jsx";
-import Header from "../components/Header.jsx";
-import styled  from "styled-components";
-import Footer from "../components/Footer.jsx";
-import {MessageSquare, Users, Zap, Shield, ArrowRight} from "lucide-react";
+"use client"
+
+/**
+ * 메인 페이지 컴포넌트 - Context 사용 버전
+ */
+import { useNavigate } from "react-router-dom"
+import styled from "styled-components"
+import { useAuth } from "../context/AuthContext"
+import Header from "../components/Header"
+import { MessageSquare, Users, Zap, Shield, ArrowRight } from "lucide-react"
+import Footer from "../components/Footer"
 
 const MainPage = () => {
-    const navigate = useNavigate();
-    const {user , logout} = useAuth()
+    const navigate = useNavigate()
+    const { user, logout } = useAuth()
 
     const handleGetStarted = () => {
         if (user) {
@@ -18,88 +22,87 @@ const MainPage = () => {
         }
     }
 
-    console.log(user)
     return (
-       <Container>
-            <Header user={user}  logout={logout}/>
-               <HeroSection>
-                   <HeroContent>
-                       <HeroTitle>
-                           실시간으로 소통하는 <HighlightText>새로운 방법</HighlightText>
-                       </HeroTitle>
-                       <HeroDescription>
-                           언제 어디서나 친구, 동료들과 실시간으로 대화하세요.
-                           <br />
-                           간편한 채팅방 생성과 관리 기능으로 더 효율적인 소통이 가능합니다.
-                       </HeroDescription>
-                       <ButtonGroup>
-                           <PrimaryButton onClick={handleGetStarted}>시작하기</PrimaryButton>
-                           <SecondaryButton onClick={() => navigate("/features")}>
-                               기능 살펴보기 <ArrowRight size={16} />
-                           </SecondaryButton>
-                       </ButtonGroup>
+        <Container>
+            <Header user={user} logout={logout} />
+            <HeroSection>
+                <HeroContent>
+                    <HeroTitle>
+                        실시간으로 소통하는 <HighlightText>새로운 방법</HighlightText>
+                    </HeroTitle>
+                    <HeroDescription>
+                        언제 어디서나 친구, 동료들과 실시간으로 대화하세요.
+                        <br />
+                        간편한 채팅방 생성과 관리 기능으로 더 효율적인 소통이 가능합니다.
+                    </HeroDescription>
+                    <ButtonGroup>
+                        <PrimaryButton onClick={handleGetStarted}>시작하기</PrimaryButton>
+                        <SecondaryButton onClick={() => navigate("/features")}>
+                            기능 살펴보기 <ArrowRight size={16} />
+                        </SecondaryButton>
+                    </ButtonGroup>
 
-                       <DecorativeCircles>
-                           <Circle size="lg" top="20%" left="10%" delay="0s" />
-                           <Circle size="md" top="60%" left="20%" delay="0.2s" />
-                           <Circle size="sm" top="30%" left="80%" delay="0.4s" />
-                           <Circle size="md" top="70%" left="70%" delay="0.6s" />
-                           <Circle size="sm" top="15%" left="60%" delay="0.8s" />
-                       </DecorativeCircles>
-                   </HeroContent>
-               </HeroSection>
-           <FeaturesSection>
-               <SectionTitle>주요 기능</SectionTitle>
-               <FeaturesGrid>
-                   <FeatureCard>
-                       <FeatureIconWrapper>
-                           <MessageSquare size={28} />
-                       </FeatureIconWrapper>
-                       <FeatureTitle>실시간 채팅</FeatureTitle>
-                       <FeatureDescription>지연 없는 빠른 메시지 전송으로 실시간 대화를 경험하세요.</FeatureDescription>
-                   </FeatureCard>
+                    <DecorativeCircles>
+                        <Circle size="lg" top="20%" left="10%" delay="0s" />
+                        <Circle size="md" top="60%" left="20%" delay="0.2s" />
+                        <Circle size="sm" top="30%" left="80%" delay="0.4s" />
+                        <Circle size="md" top="70%" left="70%" delay="0.6s" />
+                        <Circle size="sm" top="15%" left="60%" delay="0.8s" />
+                    </DecorativeCircles>
+                </HeroContent>
+            </HeroSection>
 
-                   <FeatureCard>
-                       <FeatureIconWrapper>
-                           <Users size={28} />
-                       </FeatureIconWrapper>
-                       <FeatureTitle>그룹 채팅</FeatureTitle>
-                       <FeatureDescription>여러 사람과 함께 대화할 수 있는 그룹 채팅방을 만들어보세요.</FeatureDescription>
-                   </FeatureCard>
+            <FeaturesSection>
+                <SectionTitle>주요 기능</SectionTitle>
+                <FeaturesGrid>
+                    <FeatureCard>
+                        <FeatureIconWrapper>
+                            <MessageSquare size={28} />
+                        </FeatureIconWrapper>
+                        <FeatureTitle>실시간 채팅</FeatureTitle>
+                        <FeatureDescription>지연 없는 빠른 메시지 전송으로 실시간 대화를 경험하세요.</FeatureDescription>
+                    </FeatureCard>
 
-                   <FeatureCard>
-                       <FeatureIconWrapper>
-                           <Zap size={28} />
-                       </FeatureIconWrapper>
-                       <FeatureTitle>빠른 접근성</FeatureTitle>
-                       <FeatureDescription>언제 어디서나 모바일과 데스크톱에서 쉽게 접근할 수 있습니다.</FeatureDescription>
-                   </FeatureCard>
+                    <FeatureCard>
+                        <FeatureIconWrapper>
+                            <Users size={28} />
+                        </FeatureIconWrapper>
+                        <FeatureTitle>그룹 채팅</FeatureTitle>
+                        <FeatureDescription>여러 사람과 함께 대화할 수 있는 그룹 채팅방을 만들어보세요.</FeatureDescription>
+                    </FeatureCard>
 
-                   <FeatureCard>
-                       <FeatureIconWrapper>
-                           <Shield size={28} />
-                       </FeatureIconWrapper>
-                       <FeatureTitle>보안 강화</FeatureTitle>
-                       <FeatureDescription>안전한 대화를 위한 보안 기능으로 개인정보를 보호합니다.</FeatureDescription>
-                   </FeatureCard>
-               </FeaturesGrid>
-           </FeaturesSection>
+                    <FeatureCard>
+                        <FeatureIconWrapper>
+                            <Zap size={28} />
+                        </FeatureIconWrapper>
+                        <FeatureTitle>빠른 접근성</FeatureTitle>
+                        <FeatureDescription>언제 어디서나 모바일과 데스크톱에서 쉽게 접근할 수 있습니다.</FeatureDescription>
+                    </FeatureCard>
 
-           <CTASection>
-               <CTAContent>
-                   <CTATitle>지금 바로 시작하세요</CTATitle>
-                   <CTADescription>Chattr와 함께 더 효율적이고 즐거운 소통을 경험해보세요.</CTADescription>
-                   <CTAButton onClick={handleGetStarted}>무료로 시작하기</CTAButton>
-               </CTAContent>
-           </CTASection>
+                    <FeatureCard>
+                        <FeatureIconWrapper>
+                            <Shield size={28} />
+                        </FeatureIconWrapper>
+                        <FeatureTitle>보안 강화</FeatureTitle>
+                        <FeatureDescription>안전한 대화를 위한 보안 기능으로 개인정보를 보호합니다.</FeatureDescription>
+                    </FeatureCard>
+                </FeaturesGrid>
+            </FeaturesSection>
 
-           <Footer />
-       </Container>
+            <CTASection>
+                <CTAContent>
+                    <CTATitle>지금 바로 시작하세요</CTATitle>
+                    <CTADescription>Chattr와 함께 더 효율적이고 즐거운 소통을 경험해보세요.</CTADescription>
+                    <CTAButton onClick={handleGetStarted}>무료로 시작하기</CTAButton>
+                </CTAContent>
+            </CTASection>
+
+            <Footer />
+        </Container>
     )
 }
 
-
-
+// 스타일 컴포넌트는 기존과 동일
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -111,12 +114,12 @@ const HeroSection = styled.section`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 5rem 2rem 6rem; /* 상단 패딩 조정 */
+  padding: 5rem 2rem 6rem;
   background-color: ${({ theme }) => theme.colors.background};
   position: relative;
   overflow: hidden;
   min-height: 80vh;
-  margin-top: 0; /* 헤더와의 간격 제거 */
+  margin-top: 0;
 `
 
 const HeroContent = styled.div`
@@ -211,7 +214,6 @@ const DecorativeCircles = styled.div`
   height: 100%;
   z-index: -1;
 `
-
 
 const Circle = styled.div`
   position: absolute;
@@ -380,4 +382,5 @@ const CTAButton = styled.button`
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   }
 `
+
 export default MainPage

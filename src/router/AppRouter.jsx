@@ -4,7 +4,7 @@ import MainPage from "../pages/MainPage.jsx";
 import LoginPage from "../pages/LoginPage.jsx";
 import SignupPage from "../pages/SignupPage.jsx";
 import ChatListPage from "../pages/ChatListPage.jsx";
-import * as ChatService from "../api/chat.js";
+import * as ChatService from "../services/chat.js";
 import ChatRoomPage from "../pages/ChatRoomPage.jsx";
 
 

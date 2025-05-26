@@ -1,22 +1,21 @@
-import styled from "styled-components";
+"use client"
+
+/**
+ * 로그인 페이지 컴포넌트 - Context 사용 버전
+ */
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import styled from "styled-components"
+import { useAuth } from "../context/AuthContext"
 import { MessageSquare, ChevronRight, Mail, Lock, AlertCircle } from "lucide-react"
-import {useState} from "react";
-import {useNavigate} from "react-router-dom";
-import {useAuth} from "../context/AuthContext.jsx";
 
 const LoginPage = () => {
-    const {login} = useAuth()
-    const [isLoading, setIsLoading] = useState(false)
-    const [loginType, setLoginType] = useState("EMAIL")
+    const navigate = useNavigate()
+    const { login, loading } = useAuth()
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
+    const [loginMethod, setLoginMethod] = useState("email")
     const [error, setError] = useState("")
-    const navigate = useNavigate();
-
-
-    const handleSocialLogin = (provider) => {
-        window.location.href = `http://localhost:8080/api/auth/${provider}`
-    }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -31,20 +30,24 @@ const LoginPage = () => {
             return
         }
 
-        setIsLoading(true)
         setError("")
 
         try {
-            const info = await login(email.trim(), password)
-            if (info == null) {
+            const success = await login(email.trim(), password)
+            if (success) {
+                navigate("/")
+            } else {
                 setError("로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.")
             }
-            navigate("/")
         } catch (err) {
+            setError("로그인 중 오류가 발생했습니다. 다시 시도해주세요.")
             console.error(err)
-        } finally {
-            setIsLoading(false)
         }
+    }
+
+    const handleSocialLogin = (provider) => {
+        // 소셜 로그인은 리다이렉트 방식으로 처리
+        window.location.href = `http://localhost:8080/oauth2/authorization/${provider}`
     }
 
     return (
@@ -52,7 +55,7 @@ const LoginPage = () => {
             <LeftPanel>
                 <BrandSection>
                     <LogoContainer>
-                        <MessageSquare size={32}/>
+                        <MessageSquare size={32} />
                         <LogoText>Chattr</LogoText>
                     </LogoContainer>
                     <Tagline>실시간으로 소통하는 새로운 방법</Tagline>
@@ -94,15 +97,15 @@ const LoginPage = () => {
                     </LoginHeader>
 
                     <LoginTabs>
-                        <LoginTab $isActive={loginType === "EMAIL"} onClick={() => setLoginType("EMAIL")}>
+                        <LoginTab isActive={loginMethod === "email"} onClick={() => setLoginMethod("email")}>
                             이메일 로그인
                         </LoginTab>
-                        <LoginTab $isActive={loginType === "SOCIAL"} onClick={() => setLoginType("SOCIAL")}>
+                        <LoginTab isActive={loginMethod === "social"} onClick={() => setLoginMethod("social")}>
                             소셜 로그인
                         </LoginTab>
                     </LoginTabs>
 
-                    {loginType === "EMAIL" ? (
+                    {loginMethod === "email" ? (
                         <Form onSubmit={handleSubmit}>
                             <InputGroup>
                                 <InputLabel htmlFor="email">이메일</InputLabel>
@@ -119,7 +122,7 @@ const LoginPage = () => {
                                             setError("")
                                         }}
                                         placeholder="이메일을 입력하세요"
-                                        $hasError={!!error}
+                                        hasError={!!error}
                                     />
                                 </InputWrapper>
                             </InputGroup>
@@ -152,8 +155,8 @@ const LoginPage = () => {
                                 </ErrorMessage>
                             )}
 
-                            <LoginButton type="submit" disabled={isLoading}>
-                                {isLoading ? "로그인 중..." : "로그인"}
+                            <LoginButton type="submit" disabled={loading}>
+                                {loading ? "로그인 중..." : "로그인"}
                             </LoginButton>
                         </Form>
                     ) : (
@@ -179,7 +182,7 @@ const LoginPage = () => {
     )
 }
 
-
+// 스타일 컴포넌트는 기존과 동일하므로 생략...
 const Container = styled.div`
   display: flex;
   min-height: 100vh;
@@ -293,18 +296,17 @@ const LoginTabs = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `
 
-
 const LoginTab = styled.button`
   flex: 1;
   padding: 0.75rem 0;
   font-size: 0.95rem;
-  font-weight: ${({ $isActive }) => ($isActive ? "600" : "400")};
-  color: ${({ $isActive, theme }) => ($isActive ? "#4285f4" : theme.colors.textLight)};
-  border-bottom: 2px solid ${({ $isActive }) => ($isActive ? "#4285f4" : "transparent")};
+  font-weight: ${({ isActive }) => (isActive ? "600" : "400")};
+  color: ${({ isActive, theme }) => (isActive ? "#4285f4" : theme.colors.textLight)};
+  border-bottom: 2px solid ${({ isActive }) => (isActive ? "#4285f4" : "transparent")};
   transition: all 0.2s;
   
   &:hover {
-    color: ${({ $isActive, theme }) => ($isActive ? "#4285f4" : theme.colors.text)};
+    color: ${({ isActive, theme }) => (isActive ? "#4285f4" : theme.colors.text)};
   }
 `
 
@@ -338,19 +340,18 @@ const InputIcon = styled.div`
   color: ${({ theme }) => theme.colors.textLight};
 `
 
-
 const Input = styled.input`
   width: 100%;
   padding: 0.875rem 1rem 0.875rem 2.75rem;
-  border: 1px solid ${({ $hasError, theme }) => ($hasError ? "#ef4444" : theme.colors.border)};
+  border: 1px solid ${({ hasError, theme }) => (hasError ? "#ef4444" : theme.colors.border)};
   border-radius: 8px;
   font-size: 1rem;
   transition: all 0.2s;
   
   &:focus {
     outline: none;
-    border-color: ${({ $hasError }) => ($hasError ? "#ef4444" : "#4285f4")};
-    box-shadow: 0 0 0 3px ${({ $hasError }) => ($hasError ? "rgba(239, 68, 68, 0.15)" : "rgba(66, 133, 244, 0.15)")};
+    border-color: ${({ hasError }) => (hasError ? "#ef4444" : "#4285f4")};
+    box-shadow: 0 0 0 3px ${({ hasError }) => (hasError ? "rgba(239, 68, 68, 0.15)" : "rgba(66, 133, 244, 0.15)")};
   }
   
   &::placeholder {
@@ -407,8 +408,6 @@ const SocialLoginContainer = styled.div`
   flex-direction: column;
   gap: 1rem;
 `
-
-
 
 const SocialButton = styled.button`
   display: flex;
@@ -467,4 +466,5 @@ const SignupLink = styled.a`
     text-decoration: underline;
   }
 `
+
 export default LoginPage

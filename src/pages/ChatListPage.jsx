@@ -1,113 +1,112 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import styled from "styled-components";
-import Header from "../components/Header";
-import { Plus, Search, Users, Zap, MessageSquare, X, Hash, Loader } from "lucide-react";
-import { formatTime } from "../utils.js";
+"use client"
+
+/**
+ * 채팅방 목록 페이지 컴포넌트 - 백엔드 DTO에 맞게 수정
+ */
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import styled from "styled-components"
+import { CATEGORY_TO_TOPIC_MAP, CATEGORIES } from "../types"
+import { useAuth } from "../context/AuthContext"
+import { useChat } from "../context/ChatContext"
+import Header from "../components/Header"
+import { Plus, Search, Users, Zap, MessageSquare, X, Hash, Loader } from "lucide-react"
+import { formatTime } from "../utils/utils"
 import LoadingSpinner from "../components/LoadingSpinner"
-import * as chatService from "../api/chat.js";
-import { CATEGORIES, CATEGORY_TO_TOPIC_MAP } from "../mapper/categoryMap.js";
-import {useAuth} from "../context/AuthContext.jsx";
 
-const ChatListPage = ({ onCreateChatRoom, onJoinChatRoom }) => {
-    const navigate = useNavigate();
-    let { user , logout } = useAuth();
-    const [searchTerm, setSearchTerm] = useState("");
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [newRoomName, setNewRoomName] = useState("");
-    const [newRoomDescription, setNewRoomDescription] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState("일반 대화");
-    const [activeTab, setActiveTab] = useState("my");
-    const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("전체");
-    const [isCreatingRoom, setIsCreatingRoom] = useState(false);
-    const [isChatsLoading, setIsChatsLoading] = useState(false);
-    const [chatRooms, setChatRooms] = useState([]);
+const ChatListPage = () => {
+    const navigate = useNavigate()
+    const { user, logout } = useAuth()
+    const {
+        chatRooms,
+        myChatRooms,
+        isLoading,
+        createChatRoom,
+        joinChatRoom,
+        error,
+        fetchChatRooms,
+        fetchMyChatRooms,
+        pagination,
+    } = useChat()
 
-    const filteredRooms = chatRooms.filter(
+    const [searchTerm, setSearchTerm] = useState("")
+    const [showCreateModal, setShowCreateModal] = useState(false)
+    const [newRoomName, setNewRoomName] = useState("")
+    const [newRoomDescription, setNewRoomDescription] = useState("")
+    const [selectedCategory, setSelectedCategory] = useState("일반 대화")
+    const [activeTab, setActiveTab] = useState("my")
+    const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("전체")
+    const [isCreatingRoom, setIsCreatingRoom] = useState(false)
+
+    // 탭 변경 시 해당 데이터 새로고침
+    useEffect(() => {
+        if (activeTab === "my") {
+            if(myChatRooms.length === 0){
+                fetchMyChatRooms(0, 10)
+            }
+        } else {
+            if(chatRooms.length === 0){
+                fetchChatRooms(0, 10)
+            }
+        }
+    }, [activeTab])
+
+    // 현재 탭에 따른 채팅방 목록 선택
+    const currentRooms = activeTab === "my" ? myChatRooms : chatRooms
+
+    // 검색 및 필터링된 채팅방 목록
+    const filteredRooms = currentRooms.filter(
         (room) =>
+
             room.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
             (selectedCategoryFilter === "전체" || room.category === selectedCategoryFilter)
-    );
 
-    useEffect(() => {
-        const fetchChatRooms = async () => {
-            if (!user) return;
+    )
 
-            try {
-                setIsChatsLoading(true);
-                let rooms;
-                if (activeTab === "my") {
-                    rooms = await chatService.getMyChatRooms();
-                } else if (activeTab === "hot") {
-                    rooms = await chatService.getChatRooms();
-                } else {
-                    rooms = await chatService.getChatRooms();
-                }
-                setChatRooms(rooms);
-            } catch (e) {
-                console.error("채팅방 목록 로딩 실패:", e);
-                setChatRooms([]);
-            } finally {
-                setIsChatsLoading(false);
-            }
-        };
-        fetchChatRooms();
-    }, [user, activeTab]);
+    // 핫한 채팅방 필터링 (activeTab이 "hot"일 때)
+    const displayRooms = activeTab === "hot" ? filteredRooms.filter((room) => room.isHot) : filteredRooms
 
-    const handleRoomClick = (roomId) => {
-        onJoinChatRoom(roomId);
-        navigate(`/chat/${roomId}`);
-    };
+    // 채팅방 클릭 처리
+    const handleRoomClick = async (roomId) => {
+        await joinChatRoom(roomId)
+        navigate(`/chat/${roomId}`)
+    }
 
+    // 채팅방 생성 처리
     const handleCreateRoom = async () => {
-        if (!newRoomName.trim()) return;
-
-        const tempId = Date.now(); // 임시 방 ID (고유하게)
-        const optimisticRoom = {
-            id: tempId,
-            name: newRoomName.trim(),
-            category: selectedCategory,
-            description: newRoomDescription.trim() || null,
-            isTemp: true, // 표시용 (렌더링에서 구분할 수 있음)
-        };
-
-        // 1. 낙관적으로 UI에 방 먼저 추가
-        setChatRooms(prev => [optimisticRoom, ...prev]);
+        if (!newRoomName.trim()) return
 
         try {
-            setIsCreatingRoom(true);
+            setIsCreatingRoom(true)
 
-            const topicValue = CATEGORY_TO_TOPIC_MAP[selectedCategory];
-            const descriptionValue = optimisticRoom.description;
+            // 한글 카테고리를 백엔드 enum 값으로 변환
+            const topicValue = CATEGORY_TO_TOPIC_MAP[selectedCategory]
+            const descriptionValue = newRoomDescription.trim() || null
 
-            // 2. 실제 방 생성 요청
-            const createdRoom = await onCreateChatRoom(
-                optimisticRoom.name,
-                topicValue,
-                descriptionValue
-            );
+            await createChatRoom(newRoomName.trim(), topicValue, descriptionValue)
 
-            // 3. 응답 받은 실제 방 정보로 대체
-            setChatRooms(prev =>
-                prev.map(room => (room.id === tempId ? createdRoom : room))
-            );
-
-            // 모달 닫기 및 초기화
-            setNewRoomName("");
-            setNewRoomDescription("");
-            setSelectedCategory("일반 대화");
-            setShowCreateModal(false);
-
-        } catch (e) {
-            console.error("채팅방 생성 오류:", e);
-            alert("채팅방 생성 실패. 다시 시도해주세요.");
-
-            // 4. 실패했으니 optimisticRoom 제거
-            setChatRooms(prev => prev.filter(room => room.id !== tempId));
+            setNewRoomName("")
+            setNewRoomDescription("")
+            setSelectedCategory("일반 대화")
+            setShowCreateModal(false)
+        } catch (error) {
+            console.error("채팅방 생성 중 오류 발생:", error)
+            alert("채팅방 생성에 실패했습니다. 다시 시도해주세요.")
         } finally {
-            setIsCreatingRoom(false);
+            setIsCreatingRoom(false)
         }
-    };
+    }
+
+    // 더 많은 채팅방 로드 (무한 스크롤)
+    const loadMoreRooms = () => {
+        if (!pagination.last && !isLoading) {
+            if (activeTab === "my") {
+                fetchMyChatRooms(pagination.page + 1, pagination.size)
+            } else {
+                fetchChatRooms(pagination.page + 1, pagination.size)
+            }
+        }
+    }
 
     return (
         <Container>
@@ -117,7 +116,7 @@ const ChatListPage = ({ onCreateChatRoom, onJoinChatRoom }) => {
                     <PageTitle>채팅 목록</PageTitle>
                     <TabsContainer>
                         <Tab isActive={activeTab === "my"} onClick={() => setActiveTab("my")}>
-                            <Users size={16} />내 채팅방
+                            <Users size={16} />내 채팅방 ({myChatRooms.length})
                         </Tab>
                         <Tab isActive={activeTab === "hot"} onClick={() => setActiveTab("hot")}>
                             <Zap size={16} />
@@ -125,7 +124,7 @@ const ChatListPage = ({ onCreateChatRoom, onJoinChatRoom }) => {
                         </Tab>
                         <Tab isActive={activeTab === "all"} onClick={() => setActiveTab("all")}>
                             <MessageSquare size={16} />
-                            전체 채팅
+                            전체 채팅 ({chatRooms.length})
                         </Tab>
                     </TabsContainer>
                 </PageHeader>
@@ -150,10 +149,7 @@ const ChatListPage = ({ onCreateChatRoom, onJoinChatRoom }) => {
 
                     <CategoryFilter>
                         <CategoryFilterLabel>주제:</CategoryFilterLabel>
-                        <CategorySelect
-                            value={selectedCategoryFilter}
-                            onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                        >
+                        <CategorySelect value={selectedCategoryFilter} onChange={(e) => setSelectedCategoryFilter(e.target.value)}>
                             <option value="전체">전체</option>
                             {CATEGORIES.map((category) => (
                                 <option key={category} value={category}>
@@ -164,41 +160,56 @@ const ChatListPage = ({ onCreateChatRoom, onJoinChatRoom }) => {
                     </CategoryFilter>
                 </SearchAndFilterContainer>
 
-                {isChatsLoading ? (
+                {error && <ErrorMessage>{error}</ErrorMessage>}
+
+                {isLoading && displayRooms.length === 0 ? (
                     <LoadingContainer>
                         <LoadingSpinner size={40} />
                         <LoadingText>채팅방 목록을 불러오는 중...</LoadingText>
                     </LoadingContainer>
-                ) : filteredRooms.length > 0 ? (
-                    <RoomList>
-                        {filteredRooms.map((room) => (
-                            <RoomItem key={room.id} onClick={() => handleRoomClick(room.id)}>
-                                <RoomInfo>
-                                    <RoomNameContainer>
-                                        <RoomName>{room.name}</RoomName>
-                                        {room.isHot && (
-                                            <HotBadge>
-                                                <Zap size={12} /> 인기
-                                            </HotBadge>
-                                        )}
-                                    </RoomNameContainer>
-                                    <RoomDetails>
-                                        <CategoryBadge>
-                                            <Hash size={12} />
-                                            {room.category}
-                                        </CategoryBadge>
-                                        <ParticipantsCount>
-                                            <Users size={12} />
-                                            {room.participantsCount}명 참여 중
-                                        </ParticipantsCount>
-                                    </RoomDetails>
-                                    {room.description && <RoomDescription>{room.description}</RoomDescription>}
-                                    {room.lastMessage && <LastMessage>{room.lastMessage.content}</LastMessage>}
-                                </RoomInfo>
-                                {room.lastMessage && <TimeStamp>{formatTime(room.lastMessage.timestamp)}</TimeStamp>}
-                            </RoomItem>
-                        ))}
-                    </RoomList>
+                ) : displayRooms.length > 0 ? (
+                    <>
+                        <RoomList>
+                            {displayRooms.map((room) => (
+                                <RoomItem key={room.id} onClick={() => handleRoomClick(room.id)}>
+                                    <RoomInfo>
+                                        <RoomNameContainer>
+                                            <RoomName>{room.name}</RoomName>
+                                            {room.isHot && (
+                                                <HotBadge>
+                                                    <Zap size={12} /> 인기
+                                                </HotBadge>
+                                            )}
+                                        </RoomNameContainer>
+                                        <RoomDetails>
+                                            <CategoryBadge>
+                                                <Hash size={12} />
+                                                {room.category}
+                                            </CategoryBadge>
+                                            <ParticipantsCount>
+                                                <Users size={12} />
+                                                {room.participantsCount}명 참여 중
+                                            </ParticipantsCount>
+                                        </RoomDetails>
+                                        {room.description && <RoomDescription>{room.description}</RoomDescription>}
+                                        {room.lastMessage && <LastMessage>{room.lastMessage.content}</LastMessage>}
+                                    </RoomInfo>
+                                    {room.lastMessage && <TimeStamp>{formatTime(room.lastMessage.timestamp)}</TimeStamp>}
+                                </RoomItem>
+                            ))}
+                        </RoomList>
+
+                        {/* 더 보기 버튼 또는 로딩 표시 */}
+                        {!pagination.last && (
+                            <LoadMoreContainer>
+                                {isLoading ? (
+                                    <LoadingSpinner size={30} />
+                                ) : (
+                                    <LoadMoreButton onClick={loadMoreRooms}>더 많은 채팅방 보기</LoadMoreButton>
+                                )}
+                            </LoadMoreContainer>
+                        )}
+                    </>
                 ) : (
                     <EmptyState>
                         {searchTerm
@@ -283,6 +294,7 @@ const ChatListPage = ({ onCreateChatRoom, onJoinChatRoom }) => {
     )
 }
 
+// 기존 스타일 컴포넌트들 + 새로운 스타일 추가
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -296,7 +308,7 @@ const Content = styled.main`
   margin: 0 auto;
   width: 100%;
   position: relative;
-  padding-top: 1.5rem; /* 헤더와의 간격 일관되게 유지 */
+  padding-top: 1.5rem;
 `
 
 const PageHeader = styled.div`
@@ -316,8 +328,6 @@ const TabsContainer = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   margin-bottom: 1.5rem;
 `
-
-
 
 const Tab = styled.button`
   display: flex;
@@ -414,6 +424,15 @@ const CategorySelect = styled.select`
     outline: none;
     border-color: ${({ theme }) => theme.colors.primary};
   }
+`
+
+const ErrorMessage = styled.div`
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: #fee2e2;
+  border-radius: 8px;
+  color: #ef4444;
+  text-align: center;
 `
 
 const LoadingContainer = styled.div`
@@ -542,6 +561,26 @@ const EmptyState = styled.div`
   color: ${({ theme }) => theme.colors.textLight};
 `
 
+const LoadMoreContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+`
+
+const LoadMoreButton = styled.button`
+  padding: 0.75rem 1.5rem;
+  background-color: #4285f4;
+  color: white;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: #3367d6;
+  }
+`
+
 const CreateButton = styled.button`
   position: fixed;
   bottom: 2rem;
@@ -631,8 +670,6 @@ const CategoryGrid = styled.div`
   }
 `
 
-
-
 const CategoryOption = styled.div`
   padding: 0.75rem 0.5rem;
   text-align: center;
@@ -716,6 +753,5 @@ const CharacterCount = styled.div`
   margin-top: 0.25rem;
   color: ${({ isLimit }) => (isLimit ? "#ef4444" : "#9ca3af")};
 `
-
 
 export default ChatListPage

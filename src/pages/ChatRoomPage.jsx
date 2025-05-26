@@ -1,72 +1,51 @@
 "use client"
 
 /**
- * 채팅방 페이지 컴포넌트
+ * 채팅방 페이지 컴포넌트 - Context 사용 버전
  */
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import styled from "styled-components"
 import { ArrowLeft, Send } from "lucide-react"
-import { formatTime } from "../utils.js"
-import { webSocketService } from "../api/websocket"
-import {useAuth} from "../context/AuthContext.jsx";
+import { useAuth } from "../context/AuthContext"
+import { useChat } from "../context/ChatContext"
+import { useWebSocket } from "../hooks/useWebSocket"
+import { formatTime } from "../utils/utils"
 
-/**
- * 채팅방 페이지 컴포넌트
- * 메시지 목록 표시 및 메시지 송수신 처리
- */
-const ChatRoomPage = ({onSendMessage, onJoinChatRoom }) => {
+const ChatRoomPage = () => {
     const { roomId } = useParams()
-    let { user , logout } = useAuth()
     const navigate = useNavigate()
+    const { user } = useAuth()
+    const { messages, sendMessage, joinChatRoom } = useChat()
+    const { isConnected, sendMessage: sendWebSocketMessage } = useWebSocket(roomId)
+
     const [newMessage, setNewMessage] = useState("")
-    const [localMessages, setLocalMessages] = useState([])
     const messagesEndRef = useRef(null)
-    const [isConnected, setIsConnected] = useState(false)
 
     // 채팅방 ID가 유효한지 확인
     const validRoomId = roomId || ""
 
-    // 초기 메시지 로드 및 WebSocket 연결
-    useEffect(() => {
-        if (!validRoomId) return
-
-        // 채팅방 참여 및 메시지 로드
-        onJoinChatRoom(validRoomId)
-
-
-        // WebSocket 연결
-        const connectWebSocket = async () => {
-            try {
-                // WebSocket 초기화
-                await webSocketService.init(user)
-
-                console.log("구독시도 경로 /sub/chats/" + validRoomId);
-                // 채팅방 구독
-                webSocketService.subscribeToChatRoom(validRoomId, (message) => {
-                    console.log("받은메시지 " + message)
-                    setLocalMessages((prev) => [...prev, message])
-                })
-
-                setIsConnected(true)
-            } catch (error) {
-                console.error("WebSocket 연결 오류:", error)
-                setIsConnected(false)
+    // joinChatRoom을 useCallback으로 메모이제이션
+    const memoizedJoinChatRoom = useCallback(
+        (roomId) => {
+            if (roomId && user) {
+                joinChatRoom(roomId)
             }
-        }
+        },
+        [user, joinChatRoom], // joinChatRoom 함수 자체는 제외
+    )
 
-        connectWebSocket()
-
-        // 컴포넌트 언마운트 시 구독 해제
-        return () => {
-            webSocketService.unsubscribeFromChatRoom(validRoomId)
+    // 초기 채팅방 참여
+    useEffect(() => {
+        if (validRoomId && user) {
+            memoizedJoinChatRoom(validRoomId)
         }
-    }, [validRoomId, user, onJoinChatRoom])
+    }, [validRoomId, user, memoizedJoinChatRoom])
 
     // 메시지 목록이 변경될 때 스크롤 아래로 이동
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-    }, [localMessages])
+    }, [messages[validRoomId]])
 
     // 메시지 전송 처리
     const handleSend = (e) => {
@@ -75,10 +54,10 @@ const ChatRoomPage = ({onSendMessage, onJoinChatRoom }) => {
 
         if (isConnected) {
             // WebSocket을 통해 메시지 전송
-            webSocketService.sendMessage(validRoomId, newMessage.trim())
+            sendWebSocketMessage(newMessage.trim())
         } else {
             // 폴백: HTTP API를 통해 메시지 전송
-            onSendMessage(validRoomId, newMessage.trim())
+            sendMessage(validRoomId, newMessage.trim())
         }
 
         setNewMessage("")
@@ -93,8 +72,8 @@ const ChatRoomPage = ({onSendMessage, onJoinChatRoom }) => {
         return <div>잘못된 접근입니다.</div>
     }
 
-    // 표시할 메시지 목록 (로컬 상태 우선, 없으면 props에서 가져옴)
-    const displayMessages = localMessages.length > 0 ? localMessages : []
+    // 표시할 메시지 목록
+    const displayMessages = messages[validRoomId] || []
 
     return (
         <Container>
@@ -108,16 +87,27 @@ const ChatRoomPage = ({onSendMessage, onJoinChatRoom }) => {
 
             <MessageList>
                 {displayMessages.length > 0 ? (
-                    displayMessages.map((message, index) => {
-                     const isOwnMessage = String(message.sender.userId) === String(user.userId)
+                    displayMessages.map((m, idx) => {
+                        /* ① 시스템 메시지면 NoticeLine으로 바로 렌더 */
+                        if (m.type === "NOTICE_JOIN" || m.type === "NOTICE_LEAVE") {
+                            return (
+                                <NoticeLine key={m.id ?? idx}>
+                                    {m.content /* “김진후 님이 입장했습니다!” */}
+                                </NoticeLine>
+                            )
+                        }
 
+                        /* ② 일반 채팅 버블은 기존 로직 재사용 */
+                        const isOwn = m.sender.userId === user?.userId
                         return (
-                            <MessageItem key={message.id || index} isOwnMessage={isOwnMessage}>
-                                {!isOwnMessage && <Avatar src={message.sender.avatar} alt={message.sender.name} />}
-                                <MessageContent isOwnMessage={isOwnMessage}>
-                                    {!isOwnMessage && <SenderName>{message.sender.name}</SenderName>}
-                                    <MessageBubble isOwnMessage={isOwnMessage}>{message.content}</MessageBubble>
-                                    <MessageTime isOwnMessage={isOwnMessage}>{formatTime(message.timestamp)}</MessageTime>
+                            <MessageItem key={m.id ?? idx} isOwnMessage={isOwn}>
+                                {!isOwn && <Avatar src={m.sender.avatar} alt={m.sender.name} />}
+                                <MessageContent isOwnMessage={isOwn}>
+                                    {!isOwn && <SenderName>{m.sender.name}</SenderName>}
+                                    <MessageBubble isOwnMessage={isOwn}>{m.content}</MessageBubble>
+                                    <MessageTime isOwnMessage={isOwn}>
+                                        {formatTime(m.timestamp)}
+                                    </MessageTime>
                                 </MessageContent>
                             </MessageItem>
                         )
@@ -145,7 +135,15 @@ const ChatRoomPage = ({onSendMessage, onJoinChatRoom }) => {
     )
 }
 
-// 스타일 컴포넌트
+// 시스템용 회색 가로 라인
+const NoticeLine = styled.div`
+  width: 100%;
+  margin: 8px 0;
+  text-align: center;
+  font-size: 12px;
+  color: #9ca3af;   /* tailwind gray-400 정도 */
+`;
+// 스타일 컴포넌트는 기존과 동일
 const Container = styled.div`
   display: flex;
   flex-direction: column;

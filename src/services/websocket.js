@@ -60,7 +60,7 @@ class WebSocketService {
         // WebSocket 연결 시작
         this.client.activate()
       } catch (error) {
-        console.error("WebSocket 초기화 오류:", error)
+        console.error("WebSocket 초기�� 오류:", error)
         reject(error)
         this.connectionPromise = null
       }
@@ -75,33 +75,20 @@ class WebSocketService {
    * @param {Function} onMessageReceived 메시지 수신 콜백
    */
   subscribeToChatRoom(chatId, onMessageReceived) {
-    if (!this.client || !this.client.connected) {
-      console.error("WebSocket이 연결되지 않았습니다.")
-      return
-    }
+    const subId = `/sub/chats/${chatId}`;
 
-    // 이미 구독 중인 경우 처리
-    const subscriptionId = `/sub/chats/${chatId}`
-    // 기존 구독 여부 검사
-    if (this.subscriptions.has(subscriptionId)) {
-      // ✅ 기존 핸들러 무조건 덮어쓰기 (중복 방지 핵심)
-      this.messageHandlers.set(subscriptionId, [onMessageReceived]);
+    // 이미 구독돼 있으면 최신 핸들러만 교체하고 끝
+    if (this.subscriptions.has(subId)) {
+      this.messageHandlers.set(subId, [onMessageReceived]); // ← 배열 재사용 X, 덮어쓰기
       return;
     }
 
-    // 새로운 구독 생성
-    try {
-      const subscription = this.client.subscribe(subscriptionId, (message) => {
-        console.log("web 소켓 수신" , message)
-        this.handleIncomingMessage(chatId, message)
-      })
-
-      this.subscriptions.set(subscriptionId, subscription)
-      this.messageHandlers.set(subscriptionId, [onMessageReceived])
-      console.log(`채팅방 ${chatId} 구독 성공`)
-    } catch (error) {
-      console.error(`채팅방 ${chatId} 구독 오류:`, error)
-    }
+    /* 새 구독 */
+    const sub = this.client.subscribe(subId, (msg) =>
+        this.handleIncomingMessage(chatId, msg)
+    );
+    this.subscriptions.set(subId, sub);
+    this.messageHandlers.set(subId, [onMessageReceived]);
   }
 
   /**
@@ -124,8 +111,9 @@ class WebSocketService {
    * 메시지 전송
    * @param {string} chatId 채팅방 ID
    * @param {string} content 메시지 내용
+   * @param {string} type 메시지 타입 (기본값: "CHAT")
    */
-  sendMessage(chatId, content) {
+  sendMessage(chatId, content, type = "TEXT") {
     if (!this.client || !this.client.connected) {
       console.error("WebSocket이 연결되지 않았습니다.")
       return
@@ -136,19 +124,16 @@ class WebSocketService {
       return
     }
 
+    // 백엔드 MessageRequestDTO 형식에 맞게 수정
     const message = {
       chatId: Number.parseInt(chatId),
-      senderId: Number.parseInt(this.currentUser.userId),
-      senderName: this.currentUser.name,
       content,
-      type: "TEXT",
-      isDeleted: false,
-      createdAt: new Date().toISOString(),
+      type,
     }
 
     try {
       this.client.publish({
-        destination: `/pub/api/chats/messages/send`,
+        destination: "/pub/api/chats/messages/send",
         body: JSON.stringify(message),
       })
       console.log("메시지 전송 성공:", message)
@@ -164,29 +149,35 @@ class WebSocketService {
    */
   handleIncomingMessage(chatId, stompMessage) {
     try {
-      const rawMessage = JSON.parse(stompMessage.body)
+      const raw = JSON.parse(stompMessage.body)
 
-      // 백엔드 메시지 형식을 프론트엔드 형식으로 변환
+      // ① 시스템 메시지 여부 구분
+      const isSystem = raw.senderId === null || raw.type.startsWith("NOTICE")
+
       const message = {
-        id: `${rawMessage.chatId}_${rawMessage.senderId}_${Date.now()}`, // 임시 ID 생성
-        sender: {
-          userId: rawMessage.senderId.toString(),
-          name: rawMessage.senderName,
-          email: "", // 백엔드에서 제공하지 않음
-          phone: "", // 백엔드에서 제공하지 않음
-          createdAt: "", // 백엔드에서 제공하지 않음
-          avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${rawMessage.senderName}`, // 아바타 생성
-        },
-        content: rawMessage.content,
-        timestamp: rawMessage.createdAt,
+        id: String(raw.id),
+        type: raw.type,              // NOTICE_JOIN, TEXT …
+        content: raw.content,
+        timestamp: raw.createdAt,
+        isDeleted: raw.deleted,
+        sender: isSystem
+            ? {                        // 시스템용 최소 프로필
+              userId: null,
+              name: "SYSTEM",
+              avatar: null,
+            }
+            : {
+              userId: String(raw.senderId),
+              name: raw.senderName,
+              avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${raw.senderName}`,
+            },
       }
 
-      // 등록된 모든 핸들러에게 메시지 전달
-      const subscriptionId = `/sub/chats/${chatId}`
-      const handlers = this.messageHandlers.get(subscriptionId) || []
-      handlers.forEach((handler) => handler(message))
-    } catch (error) {
-      console.error("메시지 처리 오류:", error)
+      // ② 핸들러에게 전달
+      const subId = `/sub/chats/${chatId}`
+      ;(this.messageHandlers.get(subId) || []).forEach(h => h(message))
+    } catch (e) {
+      console.error("메시지 처리 오류:", e)
     }
   }
 
