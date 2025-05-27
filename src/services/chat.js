@@ -210,6 +210,24 @@ export async function joinChatRoom(roomId) {
     }
 }
 
+
+export async function getChatRoomMembers(roomId) {
+    const response = await api.get(`/api/chats/${roomId}/members`)
+    const data = response.data
+    if (data.status !== "success") {
+        throw new Error(data.message || "채팅방 유저 목록 불러오기에 실패했습니다." )
+    }
+    console.log(data)
+
+    const members = data.data.map(member => ({
+        id: member.id,
+        name: member.name,
+        role: member.role,
+        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${member.name}`,
+    }))
+    return members;
+}
+
 /**
  * 채팅방 메시지 가져오기
  * @param {string} roomId 채팅방 ID

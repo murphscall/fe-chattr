@@ -10,8 +10,8 @@ import { CATEGORY_TO_TOPIC_MAP, CATEGORIES } from "../types"
 import { useAuth } from "../context/AuthContext"
 import { useChat } from "../context/ChatContext"
 import Header from "../components/Header"
-import { Plus, Search, Users, Zap, MessageSquare, X, Hash, Loader } from "lucide-react"
-import { formatTime } from "../utils/utils"
+import {Plus, Search, Users, Zap, MessageSquare, X, Hash, Loader, Timer} from "lucide-react"
+import { formatTime , formatRelativeTime } from "../utils/utils"
 import LoadingSpinner from "../components/LoadingSpinner"
 
 const ChatListPage = () => {
@@ -47,7 +47,7 @@ const ChatListPage = () => {
                 fetchMyChatRooms(0, 10)
             }
         }else if (activeTab === "hot"){
-            if(chatRooms.length === 0){
+            if(hotChatRooms.length === 0){
                 fetchHotChatRooms(0, 10);
             }
         }else {
@@ -79,9 +79,9 @@ const ChatListPage = () => {
     const displayRooms = activeTab === "hot" ? filteredRooms.filter((room) => room.isHot) : filteredRooms
 
     // 채팅방 클릭 처리
-    const handleRoomClick = async (roomId) => {
-        await joinChatRoom(roomId)
-        navigate(`/chat/${roomId}`)
+    const handleRoomClick = async (room) => {
+        await joinChatRoom(room.id)
+        navigate(`/chat/${room.id}`, {state : {room}})
     }
 
     // 채팅방 생성 처리
@@ -134,7 +134,7 @@ const ChatListPage = () => {
                         </Tab>
                         <Tab isActive={activeTab === "hot"} onClick={() => setActiveTab("hot")}>
                             <Zap size={16} />
-                            핫한 채팅
+                            핫한 채팅 ({hotChatRooms.filter((room) => room.isHot === true).length})
                         </Tab>
                         <Tab isActive={activeTab === "all"} onClick={() => setActiveTab("all")}>
                             <MessageSquare size={16} />
@@ -185,7 +185,7 @@ const ChatListPage = () => {
                     <>
                         <RoomList>
                             {displayRooms.map((room) => (
-                                <RoomItem key={room.id} onClick={() => handleRoomClick(room.id)}>
+                                <RoomItem key={room.id} onClick={() => handleRoomClick(room)}>
                                     <RoomInfo>
                                         <RoomNameContainer>
                                             <RoomName>{room.name}</RoomName>
@@ -208,6 +208,7 @@ const ChatListPage = () => {
                                         {room.description && <RoomDescription>{room.description}</RoomDescription>}
                                         {room.lastMessage && <LastMessage>{room.lastMessage.content}</LastMessage>}
                                     </RoomInfo>
+                                    {room.createdAt && <TimeStamp>{formatRelativeTime(room.createdAt)}</TimeStamp> }
                                     {room.lastMessage && <TimeStamp>{formatTime(room.lastMessage.timestamp)}</TimeStamp>}
                                 </RoomItem>
                             ))}
@@ -528,7 +529,7 @@ const CategoryBadge = styled.span`
   align-items: center;
   gap: 0.25rem;
   padding: 0.25rem 0.5rem;
-  background-color: #f3f4f6;
+  background-color: #F2F2F2;
   color: ${({ theme }) => theme.colors.textLight};
   border-radius: 12px;
   font-size: 0.75rem;

@@ -4,9 +4,9 @@
  * 채팅방 페이지 컴포넌트 - Context 사용 버전
  */
 import { useState, useEffect, useRef, useCallback } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import {useParams, useNavigate, useLocation} from "react-router-dom"
 import styled from "styled-components"
-import { ArrowLeft, Send } from "lucide-react"
+import { ArrowLeft, Send , Menu } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
 import { useChat } from "../context/ChatContext"
 import { useWebSocket } from "../hooks/useWebSocket"
@@ -14,13 +14,16 @@ import { formatTime } from "../utils/utils"
 
 const ChatRoomPage = () => {
     const { roomId } = useParams()
+    const {state} = useLocation()
+    const room = state?.room
     const navigate = useNavigate()
     const { user } = useAuth()
-    const { messages, sendMessage, joinChatRoom } = useChat()
+    const { messages, sendMessage, joinChatRoom, chatMembers, fetchChatMembers } = useChat()
     const { isConnected, sendMessage: sendWebSocketMessage } = useWebSocket(roomId)
 
     const [newMessage, setNewMessage] = useState("")
     const messagesEndRef = useRef(null)
+    const [isMemberListOpen, setIsMemberListOpen] = useState(false)
 
     // 채팅방 ID가 유효한지 확인
     const validRoomId = roomId || ""
@@ -62,6 +65,14 @@ const ChatRoomPage = () => {
 
         setNewMessage("")
     }
+    const handleShowMembers = (roomId) =>{
+        console.log(roomId)
+        setIsMemberListOpen(true)
+        fetchChatMembers(roomId)
+    }
+    const handleCloseMembers = () => {
+        setIsMemberListOpen(false)
+    }
 
     // 백 버튼 클릭 처리
     const handleBack = () => {
@@ -81,9 +92,40 @@ const ChatRoomPage = () => {
                 <BackButton onClick={handleBack}>
                     <ArrowLeft size={20} />
                 </BackButton>
-                <RoomTitle>채팅방</RoomTitle>
+                <RoomTitle>{room.name}</RoomTitle>
                 <ConnectionStatus isConnected={isConnected}>{isConnected ? "실시간 연결됨" : "연결 중..."}</ConnectionStatus>
+                <UsersMenu onClick={() => handleShowMembers(room.id)}>
+                    <Menu size={30}/>
+                </UsersMenu>
             </ChatHeader>
+
+
+            {isMemberListOpen && (
+                <SidebarOverlay onClick={handleCloseMembers}>
+                    <MemberSidebar onClick={(e) => e.stopPropagation()}>
+                        <SidebarHeader>
+                            <h3>대화 상대</h3>
+                            <CloseButton onClick={handleCloseMembers}>×</CloseButton>
+                        </SidebarHeader>
+                        <SidebarBody>
+
+                            {chatMembers.length === 0 ? (
+                                <p>참여자가 없습니다.</p>
+                            ) : (
+                                chatMembers.map((member, index) => (
+                                    <MemberItem key={member.userId || index}>
+                                        <Avatar src={member.avatar || "/default-avatar.png"} alt={member.name} />
+                                        <MemberInfo>
+                                            <MemberName>{member.name}</MemberName>
+                                            {member.role && <MemberRole>{member.role}</MemberRole>}
+                                        </MemberInfo>
+                                    </MemberItem>
+                                ))
+                            )}
+                        </SidebarBody>
+                    </MemberSidebar>
+                </SidebarOverlay>
+            )}
 
             <MessageList>
                 {displayMessages.length > 0 ? (
@@ -134,6 +176,88 @@ const ChatRoomPage = () => {
         </Container>
     )
 }
+
+
+const MemberItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #dddddd;
+  cursor: pointer;  
+  padding: 8px 0;
+    
+    &:hover{
+        background-color: #f0f0f0;
+    }
+`
+
+
+
+const MemberInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+`
+
+const MemberName = styled.span`
+  font-weight: bold;
+`
+
+const MemberRole = styled.span`
+  font-size: 12px;
+  color: gray;
+    `
+
+const SidebarOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 998;
+`
+
+const MemberSidebar = styled.div`
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 100vh;
+  background-color: white;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  z-index: 999;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+`
+
+const SidebarHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+`
+
+const CloseButton = styled.button`
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+`
+
+const SidebarBody = styled.div`
+    margin-top: 20px;
+`
+
+// 참여자 메뉴
+const UsersMenu= styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 10px;
+    cursor: pointer;
+`;
+
+
 
 // 시스템용 회색 가로 라인
 const NoticeLine = styled.div`
