@@ -29,28 +29,16 @@ export async function getChatRooms(page = 0, size = 10) {
             throw new Error(data.message || "채팅방 목록을 가져오는데 실패했습니다")
         }
 
-        // 현재 사용자 정보 가져오기 (로컬 스토리지에서)
-        let currentUser
-        try {
-            const userJson = localStorage.getItem("user")
-            if (userJson) {
-                currentUser = JSON.parse(userJson)
-            }
-        } catch (error) {
-            console.error("사용자 정보 파싱 오류:", error)
-        }
-
         // 백엔드 데이터를 프론트엔드 모델로 변환
         const chatRooms = data.data.content.map((chat) => ({
             id: chat.chatId.toString(),
             name: chat.title,
             description: chat.description || undefined,
             createdBy: "unknown", // 백엔드에서 제공하지 않음
-            participants: currentUser ? [currentUser] : [], // 실제로는 별도 API로 가져와야 함
             lastMessage: undefined, // 별도 API로 가져와야 함
             category: TOPIC_TO_CATEGORY_MAP[chat.topic] || "일반 대화",
             participantsCount: chat.memberCount,
-            isHot: chat.memberCount >= 10, // 10명 이상이면 핫한 채팅방
+            isHot: chat.memberCount >= 3, // 10명 이상이면 핫한 채팅방
             createdAt: chat.createdAt,
         }))
 
@@ -67,6 +55,41 @@ export async function getChatRooms(page = 0, size = 10) {
     } catch (error) {
         console.error("채팅방 목록 조회 오류:", error)
         throw error
+    }
+}
+
+export async function getHotChatRooms(page = 0, size = 10) {
+    try{
+        const response = await api.get(`http://localhost:8080/api/chats/hot?page=${page}&size=${size}`, {})
+        const data = response.data;
+        if (data.status !== "success") {
+            throw new Error(data.message || "내 채팅방 목록을 가져오는데 실패했습니다")
+        }
+        // 백엔드 데이터를 프론트엔드 모델로 변환
+        const chatRooms = data.data.content.map((chat) => ({
+            id: chat.chatId.toString(),
+            name: chat.title,
+            description: chat.description || undefined,
+            createdBy: "unknown",
+            lastMessage: undefined,
+            category: TOPIC_TO_CATEGORY_MAP[chat.topic] || "일반 대화",
+            participantsCount: chat.memberCount,
+            isHot: chat.memberCount >= 3,
+            createdAt: chat.createdAt,
+        }))
+
+        return {
+            chatRooms,
+            pagination: {
+                page: data.data.page,
+                size: data.data.size,
+                totalElements: data.data.totalElements,
+                totalPages: data.data.totalPages,
+                last: data.data.last,
+            },
+        }
+    }catch (error) {
+        console.log("인기 채팅방을 불러오지 못했습니다.",error)
     }
 }
 
@@ -114,7 +137,7 @@ export async function getMyChatRooms(page = 0, size = 10) {
             lastMessage: undefined,
             category: TOPIC_TO_CATEGORY_MAP[chat.topic] || "일반 대화",
             participantsCount: chat.memberCount,
-            isHot: chat.memberCount >= 10,
+            isHot: chat.memberCount >= 3,
             createdAt: chat.createdAt,
         }))
 

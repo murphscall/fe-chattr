@@ -19,12 +19,14 @@ const ChatListPage = () => {
     const { user, logout } = useAuth()
     const {
         chatRooms,
+        hotChatRooms,
         myChatRooms,
         isLoading,
         createChatRoom,
         joinChatRoom,
         error,
         fetchChatRooms,
+        fetchHotChatRooms,
         fetchMyChatRooms,
         pagination,
     } = useChat()
@@ -44,7 +46,11 @@ const ChatListPage = () => {
             if(myChatRooms.length === 0){
                 fetchMyChatRooms(0, 10)
             }
-        } else {
+        }else if (activeTab === "hot"){
+            if(chatRooms.length === 0){
+                fetchHotChatRooms(0, 10);
+            }
+        }else {
             if(chatRooms.length === 0){
                 fetchChatRooms(0, 10)
             }
@@ -52,7 +58,13 @@ const ChatListPage = () => {
     }, [activeTab])
 
     // 현재 탭에 따른 채팅방 목록 선택
-    const currentRooms = activeTab === "my" ? myChatRooms : chatRooms
+    const currentRooms =
+        activeTab === "my"
+            ? myChatRooms
+            : activeTab === "hot"
+                ? hotChatRooms
+                // <= 추가
+                : chatRooms
 
     // 검색 및 필터링된 채팅방 목록
     const filteredRooms = currentRooms.filter(
@@ -102,6 +114,8 @@ const ChatListPage = () => {
         if (!pagination.last && !isLoading) {
             if (activeTab === "my") {
                 fetchMyChatRooms(pagination.page + 1, pagination.size)
+            } else if (activeTab === "hot") {
+                fetchHotChatRooms(pagination.page + 1, pagination.size)
             } else {
                 fetchChatRooms(pagination.page + 1, pagination.size)
             }

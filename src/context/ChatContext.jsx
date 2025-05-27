@@ -17,6 +17,7 @@ export const ChatProvider = ({ children }) => {
     const { user } = useAuth()
     const [chatRooms, setChatRooms] = useState([])
     const [myChatRooms, setMyChatRooms] = useState([])
+    const [hotChatRooms, setHotChatRooms] = useState([])
     const [messages, setMessages] = useState({})
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState(null)
@@ -57,6 +58,32 @@ export const ChatProvider = ({ children }) => {
             }
         },
         [user],
+    )
+
+
+    const fetchHotChatRooms = useCallback(
+        async (page = 0, size = 10) => {
+            if(!user) return;
+
+            try{
+                setIsLoading(true)
+                setError(null)
+                const result = await chatService.getHotChatRooms(page, size)
+
+                if (page === 0) {
+                    setHotChatRooms(result.chatRooms)
+                } else {
+                    setHotChatRooms((prev) => [...prev, ...result.chatRooms])
+                }
+                setPagination(result.pagination)
+
+            }catch (err){
+                setError("내 채팅방 목록을 가져오는데 실패했습니다.")
+                console.error("내 채팅방 목록 조회 오류:", err)
+            }finally {
+                setIsLoading(false)
+            }
+        }
     )
 
     /**
@@ -248,11 +275,13 @@ export const ChatProvider = ({ children }) => {
         () => ({
             chatRooms,
             myChatRooms,
+            hotChatRooms,
             messages,
             isLoading,
             error,
             pagination,
             fetchChatRooms,
+            fetchHotChatRooms,
             fetchMyChatRooms,
             createChatRoom,
             joinChatRoom,
@@ -262,11 +291,13 @@ export const ChatProvider = ({ children }) => {
         [
             chatRooms,
             myChatRooms,
+            hotChatRooms,
             messages,
             isLoading,
             error,
             pagination,
             fetchChatRooms,
+            fetchHotChatRooms,
             fetchMyChatRooms,
             createChatRoom,
             joinChatRoom,
