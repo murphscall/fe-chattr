@@ -217,10 +217,10 @@ export async function getChatRoomMembers(roomId) {
     if (data.status !== "success") {
         throw new Error(data.message || "채팅방 유저 목록 불러오기에 실패했습니다." )
     }
-    console.log(data)
+    console.log("챗멤버" , data)
 
     const members = data.data.map(member => ({
-        id: member.id,
+        id: member.userId,
         name: member.name,
         role: member.role,
         avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${member.name}`,
@@ -269,6 +269,13 @@ export async function getChatRoomMessages(roomId) {
             isDeleted: msg.deleted ?? msg.isDeleted,
         };
     });
+}
+
+export async function kickUser(roomId, userId) {
+    const response = await api.post(`http://localhost:8080/api/chats/${roomId}/users/${userId}/kick `)
+    if(response.status !== 204){
+        throw new Error("추방 실패")
+    }
 }
 
 /**

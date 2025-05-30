@@ -3,7 +3,7 @@
 /**
  * 채팅방 페이지 컴포넌트 - Context 사용 버전
  */
-import { useState, useEffect, useRef, useCallback } from "react"
+import {useState, useEffect, useRef, useCallback, useMemo} from "react"
 import {useParams, useNavigate, useLocation} from "react-router-dom"
 import styled from "styled-components"
 import { ArrowLeft, Send , Menu } from "lucide-react"
@@ -18,7 +18,7 @@ const ChatRoomPage = () => {
     const room = state?.room
     const navigate = useNavigate()
     const { user } = useAuth()
-    const { messages, sendMessage, joinChatRoom, chatMembers, fetchChatMembers } = useChat()
+    const { messages, sendMessage, joinChatRoom, chatMembers, fetchChatMembers , kickUser } = useChat()
     const { isConnected, sendMessage: sendWebSocketMessage } = useWebSocket(roomId)
 
     const [newMessage, setNewMessage] = useState("")
@@ -79,6 +79,16 @@ const ChatRoomPage = () => {
         navigate("/chats")
     }
 
+    /* ───── 추방 로직 ───── */
+    const handleKick = async (userId) => {
+       kickUser(roomId,userId)
+    }
+
+    const isRoomMaster = useMemo(() => {
+        const me = chatMembers.find((m) => m.id === Number(user?.userId))
+        return me?.role === "MASTER"
+    }, [chatMembers, user])
+
     if (!validRoomId) {
         return <div>잘못된 접근입니다.</div>
     }
@@ -99,7 +109,7 @@ const ChatRoomPage = () => {
                 </UsersMenu>
             </ChatHeader>
 
-
+            {/* ───── 멤버 사이드바 ───── */}
             {isMemberListOpen && (
                 <SidebarOverlay onClick={handleCloseMembers}>
                     <MemberSidebar onClick={(e) => e.stopPropagation()}>
@@ -107,20 +117,36 @@ const ChatRoomPage = () => {
                             <h3>대화 상대</h3>
                             <CloseButton onClick={handleCloseMembers}>×</CloseButton>
                         </SidebarHeader>
-                        <SidebarBody>
 
+                        <SidebarBody>
                             {chatMembers.length === 0 ? (
                                 <p>참여자가 없습니다.</p>
                             ) : (
-                                chatMembers.map((member, index) => (
-                                    <MemberItem key={member.userId || index}>
-                                        <Avatar src={member.avatar || "/default-avatar.png"} alt={member.name} />
-                                        <MemberInfo>
-                                            <MemberName>{member.name}</MemberName>
-                                            {member.role && <MemberRole>{member.role}</MemberRole>}
-                                        </MemberInfo>
-                                    </MemberItem>
-                                ))
+                                chatMembers.map((member) => {
+                                    const showKick =
+                                        isRoomMaster &&
+
+                                        member.id !== Number(user?.userId) &&
+                                        member.role !== "MASTER"
+                                    return (
+                                        <MemberItem key={member.id}>
+                                            <Avatar
+                                                src={member.avatar || "/default-avatar.png"}
+                                                alt={member.name}
+                                            />
+                                            <MemberInfo>
+                                                <MemberName>{member.name}</MemberName>
+                                                {member.role && <MemberRole>{member.role}</MemberRole>}
+                                            </MemberInfo>
+
+                                            {showKick && (
+                                                <KickButton onClick={() => handleKick(member.id)}>
+                                                    추방
+                                                </KickButton>
+                                            )}
+                                        </MemberItem>
+                                    )
+                                })
                             )}
                         </SidebarBody>
                     </MemberSidebar>
@@ -131,10 +157,10 @@ const ChatRoomPage = () => {
                 {displayMessages.length > 0 ? (
                     displayMessages.map((m, idx) => {
                         /* ① 시스템 메시지면 NoticeLine으로 바로 렌더 */
-                        if (m.type === "NOTICE_JOIN" || m.type === "NOTICE_LEAVE") {
+                        if (m.type === "NOTICE_JOIN" || m.type === "NOTICE_LEAVE" || m.type === "NOTICE_KICK") {
                             return (
                                 <NoticeLine key={m.id ?? idx}>
-                                    {m.content /* “김진후 님이 입장했습니다!” */}
+                                    {m.content}
                                 </NoticeLine>
                             )
                         }
@@ -176,6 +202,16 @@ const ChatRoomPage = () => {
         </Container>
     )
 }
+const KickButton = styled.button`
+    margin-left:8px;
+    padding:4px 8px;
+    border:none;
+    border-radius:4px;
+    font-size:0.8rem;
+    background:#e74c3c;
+    color:#fff;
+    cursor:pointer;
+    &:hover{opacity:.85;}`
 
 
 const MemberItem = styled.div`

@@ -150,9 +150,10 @@ class WebSocketService {
   handleIncomingMessage(chatId, stompMessage) {
     try {
       const raw = JSON.parse(stompMessage.body)
+      console.log(raw)
 
       // ① 시스템 메시지 여부 구분
-      const isSystem = raw.senderId === null || raw.type.startsWith("NOTICE")
+      const isSystem = raw.type.startsWith("NOTICE")
 
       const message = {
         id: String(raw.id),
@@ -160,6 +161,7 @@ class WebSocketService {
         content: raw.content,
         timestamp: raw.createdAt,
         isDeleted: raw.deleted,
+        targetName: raw.targetName || null,
         sender: isSystem
             ? {                        // 시스템용 최소 프로필
               userId: null,

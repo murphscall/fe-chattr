@@ -142,6 +142,35 @@ export const ChatProvider = ({ children }) => {
         [user]
     );
 
+    const kickUser = useCallback(
+        async (roomId, memberId) => {
+            if (!user) return;
+
+            try {
+                setIsLoading(true);
+                setError(null);
+
+                // ── REST 호출 (성공/실패만 확인) ──
+                await chatService.kickUser(roomId, memberId); // 204 No Content 권장
+
+                // ── 프론트 상태에서 즉시 제거 ──
+                setChatMembers((prev) =>
+                    prev.filter((m) => Number(m.id) !== Number(memberId))
+                );
+
+                // ※ WebSocket “KICK” 이벤트를 따로 수신한다면
+                //    여기선 optimistic UI, 소켓 수신 시 최종 동기화
+
+            } catch (err) {
+                console.error("참여자 추방 실패:", err);
+                setError("참여자 추방에 실패했습니다.");
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [user,chatMembers]
+    );
+
     /**
      * 채팅방 생성
      */
@@ -253,6 +282,7 @@ export const ChatProvider = ({ children }) => {
         [user],
     )
 
+
     /**
      * 실시간 메시지 수신 처리
      */
@@ -316,6 +346,7 @@ export const ChatProvider = ({ children }) => {
             joinChatRoom,
             sendMessage,
             addMessage,
+            kickUser,
         }),
         [
             chatRooms,
@@ -334,6 +365,7 @@ export const ChatProvider = ({ children }) => {
             joinChatRoom,
             sendMessage,
             addMessage,
+            kickUser,
         ],
     )
 
