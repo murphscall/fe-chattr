@@ -24,6 +24,8 @@ class WebSocketService {
    */
   init(user) {
     this.currentUser = user
+    
+    console.log(this.currentUser.userId , "난커렌트유저아이디요!")
 
     if (this.connectionPromise) {
       return this.connectionPromise
@@ -60,7 +62,7 @@ class WebSocketService {
         // WebSocket 연결 시작
         this.client.activate()
       } catch (error) {
-        console.error("WebSocket 초기�� 오류:", error)
+        console.error("WebSocket 초기화 오류:", error)
         reject(error)
         this.connectionPromise = null
       }
@@ -89,6 +91,45 @@ class WebSocketService {
     );
     this.subscriptions.set(subId, sub);
     this.messageHandlers.set(subId, [onMessageReceived]);
+  }
+
+  subscribeToPersonalNotifications(onKickNotification) {
+    if (!this.client || !this.client.connected) {
+
+      return
+    }
+
+    const subId = `/user/queue/kick-notification`
+
+    if (!this.subscriptions.has(subId)) {
+      const subscription = this.client.subscribe(subId, (message) => {
+        try {
+          const notification = JSON.parse(message.body)
+          if (notification.type === 'KICKED') {
+            onKickNotification(notification)
+          }
+        } catch (error) {
+          console.error("알림 처리 오류:", error)
+        }
+      })
+
+      this.subscriptions.set(subId, subscription)
+      console.log("개별 알림 구독 시작")
+    }
+  }
+
+  /**
+   * 개별 알림 구독 해제
+   */
+  unsubscribeFromPersonalNotifications() {
+    const subId = `/user/queue/kick-notification`
+    const subscription = this.subscriptions.get(subId)
+
+    if (subscription) {
+      subscription.unsubscribe()
+      this.subscriptions.delete(subId)
+      console.log("개별 알림 구독 해제")
+    }
   }
 
   /**
@@ -150,7 +191,25 @@ class WebSocketService {
   handleIncomingMessage(chatId, stompMessage) {
     try {
       const raw = JSON.parse(stompMessage.body)
-      console.log(raw)
+      console.log("=== 받은 메시지 ===", raw)
+
+      // 추방 메시지 특별 처리
+      if (raw.type === "NOTICE_KICK" && raw.targetId) {
+        console.log("추방 메시지 감지!", {
+          targetId: raw.targetId,
+          currentUserId: this.currentUser?.userId,
+          isMe: String(raw.targetUserId) === String(this.currentUser?.userId)
+        })
+        // 내가 추방당한 경우 체크
+        if (this.currentUser && String(raw.targetId) === String(this.currentUser.userId)) {
+          console.log("내가 추방당함! 3초 후 이동...")
+          // 잠시 후 알림 표시 및 방 나가기
+          setTimeout(() => {
+            alert('채팅방에서 추방되었습니다.')
+            this.handleKickOut(chatId)
+          }, 1000)
+        }
+      }
 
       // ① 시스템 메시지 여부 구분
       const isSystem = raw.type.startsWith("NOTICE")
@@ -161,6 +220,7 @@ class WebSocketService {
         content: raw.content,
         timestamp: raw.createdAt,
         isDeleted: raw.deleted,
+        targetUserId: raw.targetId, // 추방 대상 ID 추가
         targetName: raw.targetName || null,
         sender: isSystem
             ? {                        // 시스템용 최소 프로필
@@ -183,6 +243,18 @@ class WebSocketService {
     }
   }
 
+  handleKickOut(chatId) {
+    console.log("=== 추방 처리 시작 ===", chatId)
+    // 해당 채팅방 구독 해제
+    this.unsubscribeFromChatRoom(chatId)
+    console.log("채팅방 구독 해제 완료")
+
+    // 채팅방 목록으로 이동
+    if (typeof window !== 'undefined') {
+      console.log("페이지 이동 시도...")
+      window.location.href = '/chats'
+    }
+  }
   /**
    * 연결 종료
    */
