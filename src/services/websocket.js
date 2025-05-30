@@ -93,45 +93,6 @@ class WebSocketService {
     this.messageHandlers.set(subId, [onMessageReceived]);
   }
 
-  subscribeToPersonalNotifications(onKickNotification) {
-    if (!this.client || !this.client.connected) {
-
-      return
-    }
-
-    const subId = `/user/queue/kick-notification`
-
-    if (!this.subscriptions.has(subId)) {
-      const subscription = this.client.subscribe(subId, (message) => {
-        try {
-          const notification = JSON.parse(message.body)
-          if (notification.type === 'KICKED') {
-            onKickNotification(notification)
-          }
-        } catch (error) {
-          console.error("알림 처리 오류:", error)
-        }
-      })
-
-      this.subscriptions.set(subId, subscription)
-      console.log("개별 알림 구독 시작")
-    }
-  }
-
-  /**
-   * 개별 알림 구독 해제
-   */
-  unsubscribeFromPersonalNotifications() {
-    const subId = `/user/queue/kick-notification`
-    const subscription = this.subscriptions.get(subId)
-
-    if (subscription) {
-      subscription.unsubscribe()
-      this.subscriptions.delete(subId)
-      console.log("개별 알림 구독 해제")
-    }
-  }
-
   /**
    * 채팅방 구독 해제
    * @param {string} chatId 채팅방 ID
