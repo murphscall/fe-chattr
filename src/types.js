@@ -116,3 +116,5 @@ export const TOPIC_TO_CATEGORY_MAP = {
     [ChatTopic.ADULT]: "성인",
     [ChatTopic.ETC]: "기타",
 }
+
+
