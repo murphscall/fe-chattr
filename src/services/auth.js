@@ -124,6 +124,7 @@ export async function getCurrentUser() {
 
 /**
  * 토큰 갱신 함수
+ * @property
  * @returns {Promise<boolean>} 토큰 갱신 성공 여부
  */
 export async function refreshToken() {

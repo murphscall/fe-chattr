@@ -20,12 +20,14 @@ const ChatListPage = () => {
     const {
         chatRooms,
         hotChatRooms,
+        createByMeChatRooms,
         myChatRooms,
         isLoading,
         createChatRoom,
         joinChatRoom,
         error,
         fetchChatRooms,
+        fetchCreateByMeChatRooms,
         fetchHotChatRooms,
         fetchMyChatRooms,
         pagination,
@@ -50,6 +52,10 @@ const ChatListPage = () => {
             if(hotChatRooms.length === 0){
                 fetchHotChatRooms(0, 10);
             }
+        }else if (activeTab === "me"){
+            if(createByMeChatRooms.length === 0){
+                fetchCreateByMeChatRooms()
+            }
         }else {
             if(chatRooms.length === 0){
                 fetchChatRooms(0, 10)
@@ -64,7 +70,8 @@ const ChatListPage = () => {
             : activeTab === "hot"
                 ? hotChatRooms
                 // <= 추가
-                : chatRooms
+                : activeTab === "me" ?
+                createByMeChatRooms : chatRooms
 
     // 검색 및 필터링된 채팅방 목록
     const filteredRooms = currentRooms.filter(
@@ -103,7 +110,7 @@ const ChatListPage = () => {
             setShowCreateModal(false)
         } catch (error) {
             console.error("채팅방 생성 중 오류 발생:", error)
-            alert("채팅방 생성에 실패했습니다. 다시 시도해주세요.")
+            alert(error.response.data.data)
         } finally {
             setIsCreatingRoom(false)
         }
@@ -129,8 +136,11 @@ const ChatListPage = () => {
                 <PageHeader>
                     <PageTitle>채팅 목록</PageTitle>
                     <TabsContainer>
+                        <Tab isActive={activeTab === "me"} onClick={() => setActiveTab("me")}>
+                            <Users size={16} />내 채팅방 ({createByMeChatRooms.length})
+                        </Tab>
                         <Tab isActive={activeTab === "my"} onClick={() => setActiveTab("my")}>
-                            <Users size={16} />내 채팅방 ({myChatRooms.length})
+                            <Users size={16} />참여중인 채팅방 ({myChatRooms.length})
                         </Tab>
                         <Tab isActive={activeTab === "hot"} onClick={() => setActiveTab("hot")}>
                             <Zap size={16} />
@@ -215,7 +225,7 @@ const ChatListPage = () => {
                         </RoomList>
 
                         {/* 더 보기 버튼 또는 로딩 표시 */}
-                        {!pagination.last && (
+                        {!pagination.last && activeTab !== "me" && (
                             <LoadMoreContainer>
                                 {isLoading ? (
                                     <LoadingSpinner size={30} />

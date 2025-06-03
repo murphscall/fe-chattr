@@ -6,11 +6,12 @@
 import {useState, useEffect, useRef, useCallback, useMemo} from "react"
 import {useParams, useNavigate, useLocation} from "react-router-dom"
 import styled from "styled-components"
-import { ArrowLeft, Send , Menu } from "lucide-react"
+import { ArrowLeft, Send , Menu , LucideLogOut } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
 import { useChat } from "../context/ChatContext"
 import { useWebSocket } from "../hooks/useWebSocket"
 import { formatTime } from "../utils/utils"
+import Modal from "../components/Modal.jsx";
 
 const ChatRoomPage = () => {
     const { roomId } = useParams()
@@ -18,9 +19,9 @@ const ChatRoomPage = () => {
     const room = state?.room
     const navigate = useNavigate()
     const { user } = useAuth()
-    const { messages, sendMessage, joinChatRoom, chatMembers, fetchChatMembers , kickUser } = useChat()
+    const { messages, sendMessage, joinChatRoom, chatMembers, fetchChatMembers , kickUser , exitUser } = useChat()
     const { isConnected, sendMessage: sendWebSocketMessage } = useWebSocket(roomId)
-
+    const [confirmOpen , setConfirmOpen] = useState(false)
     const [newMessage, setNewMessage] = useState("")
     const messagesEndRef = useRef(null)
     const [isMemberListOpen, setIsMemberListOpen] = useState(false)
@@ -72,6 +73,15 @@ const ChatRoomPage = () => {
     }
     const handleCloseMembers = () => {
         setIsMemberListOpen(false)
+    }
+    const handleExitRoom = async (roomId) =>{
+       try{
+           await exitUser(roomId)
+           navigate("/chats")
+       }catch (err){
+           console.error("채팅방 나가기 실패:", err)
+           alert("채팅방 나가기 중 오류가 발생했습니다.")
+       }
     }
 
     // 백 버튼 클릭 처리
@@ -149,9 +159,22 @@ const ChatRoomPage = () => {
                                 })
                             )}
                         </SidebarBody>
+                        <SidebarBottom>
+                            <ExitButton onClick={() => setConfirmOpen(true)}>
+                                <LucideLogOut size={20} />
+                                채팅방 나가기
+                            </ExitButton>
+                        </SidebarBottom>
                     </MemberSidebar>
                 </SidebarOverlay>
             )}
+
+            <Modal
+                isOpen={confirmOpen}
+                title="정말 나가시겠습니까?"
+                onConfirm={() => handleExitRoom(roomId)}
+                onCancel={() => setConfirmOpen(false)}
+            />
 
             <MessageList>
                 {displayMessages.length > 0 ? (
@@ -202,6 +225,31 @@ const ChatRoomPage = () => {
         </Container>
     )
 }
+
+const SidebarBottom = styled.div`
+   padding: 12px 16px 12px 0;
+    border-top: 1px solid #ddd;
+`
+const ExitButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 8px; /* ← 아이콘과 텍스트 사이 간격 */
+
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #242424;
+    background-color: #eeeeee;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+        background-color: #e0e0e0;
+    }
+`
 const KickButton = styled.button`
     margin-left:8px;
     padding:4px 8px;
@@ -258,7 +306,7 @@ const MemberSidebar = styled.div`
   top: 0;
   right: 0;
   width: 300px;
-  height: 100vh;
+  height: 100%;
   background-color: white;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
   z-index: 999;
@@ -281,6 +329,8 @@ const CloseButton = styled.button`
 `
 
 const SidebarBody = styled.div`
+    flex: 1;
+    overflow: auto;
     margin-top: 20px;
 `
 

@@ -25,7 +25,7 @@ class WebSocketService {
   init(user) {
     this.currentUser = user
     
-    console.log(this.currentUser.userId , "난커렌트유저아이디요!")
+
 
     if (this.connectionPromise) {
       return this.connectionPromise

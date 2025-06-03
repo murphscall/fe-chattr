@@ -17,6 +17,7 @@ export const ChatProvider = ({ children }) => {
     const { user } = useAuth()
     const [chatRooms, setChatRooms] = useState([])
     const [myChatRooms, setMyChatRooms] = useState([])
+    const [createByMeChatRooms, setCreateByMeChatRooms] = useState([])
     const [hotChatRooms, setHotChatRooms] = useState([])
     const [chatMembers , setChatMembers] = useState([])
     const [messages, setMessages] = useState({})
@@ -85,6 +86,25 @@ export const ChatProvider = ({ children }) => {
                 setIsLoading(false)
             }
         }
+
+    )
+    const fetchCreateByMeChatRooms = useCallback(
+        async () => {
+            if (!user) return
+
+            try {
+                setIsLoading(true)
+                setError(null)
+                const result = await chatService.getCreateByMeChatRooms()
+                setCreateByMeChatRooms(result)
+            } catch (err) {
+                setError("내 채팅방 목록을 가져오는데 실패했습니다.")
+                console.error("내 채팅방 목록 조회 오류:", err)
+            } finally {
+                setIsLoading(false)
+            }
+        },
+        [user],
     )
 
     /**
@@ -142,6 +162,23 @@ export const ChatProvider = ({ children }) => {
         [user]
     );
 
+    const exitUser = useCallback(
+        async (roomId) => {
+            if (!user) return;
+
+            try{
+                setIsLoading(true);
+                setError(null);
+
+                await chatService.exitChatRoom(roomId);
+            }catch(err){
+                console.log(err)
+            }finally {
+                setIsLoading(false);
+            }
+        }
+    )
+
     const kickUser = useCallback(
         async (roomId, memberId) => {
             if (!user) return;
@@ -188,7 +225,8 @@ export const ChatProvider = ({ children }) => {
 
                 return createdRoom.id
             } catch (err) {
-                setError("채팅방 생성에 실패했습니다.")
+                console.log(err.response.data.data)
+                setError(err.response.data.data)
                 console.error("채팅방 생성 오류:", err)
                 throw err
             }
@@ -334,12 +372,14 @@ export const ChatProvider = ({ children }) => {
             myChatRooms,
             chatMembers,
             hotChatRooms,
+            createByMeChatRooms,
             messages,
             isLoading,
             error,
             pagination,
             fetchChatRooms,
             fetchChatMembers,
+            fetchCreateByMeChatRooms,
             fetchHotChatRooms,
             fetchMyChatRooms,
             createChatRoom,
@@ -347,11 +387,13 @@ export const ChatProvider = ({ children }) => {
             sendMessage,
             addMessage,
             kickUser,
+            exitUser
         }),
         [
             chatRooms,
             myChatRooms,
             chatMembers,
+            createByMeChatRooms,
             hotChatRooms,
             messages,
             isLoading,
@@ -360,12 +402,14 @@ export const ChatProvider = ({ children }) => {
             fetchChatRooms,
             fetchChatMembers,
             fetchHotChatRooms,
+            fetchCreateByMeChatRooms,
             fetchMyChatRooms,
             createChatRoom,
             joinChatRoom,
             sendMessage,
             addMessage,
             kickUser,
+            exitUser
         ],
     )
 

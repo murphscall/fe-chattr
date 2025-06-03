@@ -58,6 +58,34 @@ export async function getChatRooms(page = 0, size = 10) {
     }
 }
 
+export async function getCreateByMeChatRooms() {
+    console.log("갑니다요청")
+    try{
+        const response = await api.get("http://localhost:8080/api/chats/my")
+        const data = response.data;
+        console.log(data)
+        if (data.status !== "success") {
+            throw new Error(data.message || "내 채팅방 목록을 가져오는데 실패했습니다")
+        }
+        // 백엔드 데이터를 프론트엔드 모델로 변환
+        const chatRooms = data.data.map((chat) => ({
+            id: chat.chatId.toString(),
+            name: chat.title,
+            description: chat.description || undefined,
+            createdBy: "unknown",
+            lastMessage: undefined,
+            category: TOPIC_TO_CATEGORY_MAP[chat.topic] || "일반 대화",
+            participantsCount: chat.memberCount,
+            isHot: chat.memberCount >= 3,
+            createdAt: chat.createdAt,
+        }))
+
+        return chatRooms
+    }catch (error) {
+        console.log("인기 채팅방을 불러오지 못했습니다.",error)
+    }
+}
+
 export async function getHotChatRooms(page = 0, size = 10) {
     try{
         const response = await api.get(`http://localhost:8080/api/chats/hot?page=${page}&size=${size}`, {})
@@ -172,12 +200,11 @@ export async function createChatRoom(title, topic, description) {
     title,topic,description : description || null,
         }
     )
-
     const data = response.data
     console.log("채팅방 생성 성공 응답:", data)
 
     if (data.status !== "success") {
-        throw new Error(data.message || "채팅방 생성에 실패했습니다")
+        throw new Error(data.data || "채팅방 생성에 실패했습니다")
     }
 
 
@@ -226,6 +253,15 @@ export async function getChatRoomMembers(roomId) {
         avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${member.name}`,
     }))
     return members;
+}
+
+export async function exitChatRoom(roomId) {
+    const response = await api.post(`http://localhost:8080/api/chats/${roomId}/exit`)
+    const data = response.data;
+
+    if(data.status !== "success"){
+        throw new Error(data.message || "채팅방 나가기에 실패하였습니다.")
+    }
 }
 
 /**
