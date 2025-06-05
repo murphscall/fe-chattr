@@ -44,11 +44,8 @@ const Header = ({user , logout}) => {
             <NavItem $isActive={location.pathname === "/"} onClick={() => navigate("/")}>
               홈
             </NavItem>
-            <NavItem $isActive={location.pathname === "/features"} onClick={() => navigate("/features")}>
+            <NavItem $isActive={location.pathname === "/feature"} onClick={() => navigate("/feature")}>
               기능
-            </NavItem>
-            <NavItem $isActive={location.pathname === "/pricing"} onClick={() => navigate("/pricing")}>
-              요금제
             </NavItem>
             <NavItem $isActive={location.pathname === "/about"} onClick={() => navigate("/about")}>
               소개

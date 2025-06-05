@@ -320,6 +320,70 @@ export const ChatProvider = ({ children }) => {
         [user],
     )
 
+    // 메시지 좋아요 토글 함수 (간단한 버전)
+    const messageLike = useCallback(async (roomId, msgId) => {
+        if (!user) return;
+
+        // 1. 즉시 UI 업데이트 (낙관적 업데이트)
+        setMessages(prevMessages => {
+            const roomMessages = prevMessages[roomId] || []
+            const updatedMessages = roomMessages.map(msg => {
+                if (msg.id === msgId) {
+                    const wasLiked = msg.isLikedByMe
+                    return {
+                        ...msg,
+                        isLikedByMe: !wasLiked,
+                        likeCount: wasLiked ? msg.likeCount - 1 : msg.likeCount + 1
+                    }
+                }
+                return msg
+            })
+
+            return {
+                ...prevMessages,
+                [roomId]: updatedMessages
+            }
+        })
+
+        try {
+            setError(null)
+
+            // 2. API 호출
+            await chatService.messageLike(roomId, msgId)
+
+            // 3. 성공 시 메시지 다시 불러와서 정확한 데이터 동기화
+            const updatedMessages = await chatService.getChatRoomMessages(roomId)
+            setMessages(prevMessages => ({
+                ...prevMessages,
+                [roomId]: updatedMessages
+            }))
+
+        } catch (e) {
+            console.error('좋아요 토글 실패:', e)
+            setError('좋아요 처리 중 오류가 발생했습니다.')
+
+            // 4. 실패 시 원래 상태로 롤백
+            setMessages(prevMessages => {
+                const roomMessages = prevMessages[roomId] || []
+                const revertedMessages = roomMessages.map(msg => {
+                    if (msg.id === msgId) {
+                        const currentLiked = msg.isLikedByMe
+                        return {
+                            ...msg,
+                            isLikedByMe: !currentLiked,
+                            likeCount: currentLiked ? msg.likeCount - 1 : msg.likeCount + 1
+                        }
+                    }
+                    return msg
+                })
+
+                return {
+                    ...prevMessages,
+                    [roomId]: revertedMessages
+                }
+            })
+        }
+    }, [user])
 
     /**
      * 실시간 메시지 수신 처리
@@ -387,7 +451,8 @@ export const ChatProvider = ({ children }) => {
             sendMessage,
             addMessage,
             kickUser,
-            exitUser
+            exitUser,
+            messageLike
         }),
         [
             chatRooms,
@@ -409,7 +474,8 @@ export const ChatProvider = ({ children }) => {
             sendMessage,
             addMessage,
             kickUser,
-            exitUser
+            exitUser,
+            messageLike
         ],
     )
 

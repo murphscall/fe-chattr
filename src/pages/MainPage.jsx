@@ -37,7 +37,7 @@ const MainPage = () => {
                     </HeroDescription>
                     <ButtonGroup>
                         <PrimaryButton onClick={handleGetStarted}>시작하기</PrimaryButton>
-                        <SecondaryButton onClick={() => navigate("/features")}>
+                        <SecondaryButton onClick={() => navigate("/feature")}>
                             기능 살펴보기 <ArrowRight size={16} />
                         </SecondaryButton>
                     </ButtonGroup>

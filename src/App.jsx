@@ -19,6 +19,8 @@ import SignupPage from "./pages/SignupPage"
 import ChatListPage from "./pages/ChatListPage"
 import ChatRoomPage from "./pages/ChatRoomPage"
 import MyPage from "./pages/MyPage"
+import FeaturesPage from "./pages/FeaturePage.jsx";
+import AppRouter from "./router/AppRouter.jsx";
 
 function App() {
     return (
@@ -27,37 +29,7 @@ function App() {
             <AuthProvider>
                 <ChatProvider>
                     <Router>
-                        <Routes>
-                            <Route path="/" element={<MainPage />} />
-                            <Route path="/login" element={<LoginPage />} />
-                            <Route path="/signup" element={<SignupPage />} />
-                            <Route
-                                path="/chats"
-                                element={
-                                    <ProtectedRoute>
-                                        <ChatListPage />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/chat/:roomId"
-                                element={
-                                    <ProtectedRoute>
-                                        <ChatRoomPage />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/mypage"
-                                element={
-                                    <ProtectedRoute>
-                                        <MyPage />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            {/* 404 페이지 */}
-                            <Route path="*" element={<Navigate to="/" replace />} />
-                        </Routes>
+                        <AppRouter/>
                     </Router>
                 </ChatProvider>
             </AuthProvider>

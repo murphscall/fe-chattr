@@ -156,6 +156,7 @@ class WebSocketService {
 
       // 추방 메시지 특별 처리
       if (raw.type === "NOTICE_KICK" && raw.targetId) {
+        console.log(this.currentUser.userId)
         console.log("추방 메시지 감지!", {
           targetId: raw.targetId,
           currentUserId: this.currentUser?.userId,

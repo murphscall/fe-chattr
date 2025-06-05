@@ -137,10 +137,10 @@ const ChatListPage = () => {
                     <PageTitle>채팅 목록</PageTitle>
                     <TabsContainer>
                         <Tab isActive={activeTab === "me"} onClick={() => setActiveTab("me")}>
-                            <Users size={16} />내 채팅방 ({createByMeChatRooms.length})
+                            <Users size={16} />내가 만든 채팅방 ({createByMeChatRooms.length})
                         </Tab>
                         <Tab isActive={activeTab === "my"} onClick={() => setActiveTab("my")}>
-                            <Users size={16} />참여중인 채팅방 ({myChatRooms.length})
+                            <Users size={16} />참여 중({myChatRooms.length})
                         </Tab>
                         <Tab isActive={activeTab === "hot"} onClick={() => setActiveTab("hot")}>
                             <Zap size={16} />

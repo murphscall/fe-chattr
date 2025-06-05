@@ -6,7 +6,8 @@
 import {useState, useEffect, useRef, useCallback, useMemo} from "react"
 import {useParams, useNavigate, useLocation} from "react-router-dom"
 import styled from "styled-components"
-import { ArrowLeft, Send , Menu , LucideLogOut } from "lucide-react"
+
+import { ArrowLeft, Send , Menu, Heart,LucideLogOut } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
 import { useChat } from "../context/ChatContext"
 import { useWebSocket } from "../hooks/useWebSocket"
@@ -19,12 +20,13 @@ const ChatRoomPage = () => {
     const room = state?.room
     const navigate = useNavigate()
     const { user } = useAuth()
-    const { messages, sendMessage, joinChatRoom, chatMembers, fetchChatMembers , kickUser , exitUser } = useChat()
+    const { messages, sendMessage, joinChatRoom, chatMembers, fetchChatMembers , kickUser ,messageLike ,exitUser } = useChat()
     const { isConnected, sendMessage: sendWebSocketMessage } = useWebSocket(roomId)
-    const [confirmOpen , setConfirmOpen] = useState(false)
+    const [confirmOpen, setConfirmOpen] = useState(false)
     const [newMessage, setNewMessage] = useState("")
     const messagesEndRef = useRef(null)
     const [isMemberListOpen, setIsMemberListOpen] = useState(false)
+
 
     // 채팅방 ID가 유효한지 확인
     const validRoomId = roomId || ""
@@ -87,6 +89,15 @@ const ChatRoomPage = () => {
     // 백 버튼 클릭 처리
     const handleBack = () => {
         navigate("/chats")
+    }
+
+    // 좋아요 토글 처리 - 이제 Context에서 직접 사용
+    const toggleLike = async (msgId) => {
+        try {
+            await messageLike(roomId, msgId)
+        } catch (err) {
+            console.error("좋아요 토글 실패", err)
+        }
     }
 
     /* ───── 추방 로직 ───── */
@@ -194,11 +205,17 @@ const ChatRoomPage = () => {
                             <MessageItem key={m.id ?? idx} isOwnMessage={isOwn}>
                                 {!isOwn && <Avatar src={m.sender.avatar} alt={m.sender.name} />}
                                 <MessageContent isOwnMessage={isOwn}>
+
                                     {!isOwn && <SenderName>{m.sender.name}</SenderName>}
-                                    <MessageBubble isOwnMessage={isOwn}>{m.content}</MessageBubble>
-                                    <MessageTime isOwnMessage={isOwn}>
-                                        {formatTime(m.timestamp)}
-                                    </MessageTime>
+                                        <MessageBubble isOwnMessage={isOwn}>{m.content}</MessageBubble>
+                                        <HeartContent>
+                                            <Heart size={18} fill={m.isLikedByMe ? "red" : "none"} onClick={() => toggleLike(m.id)} key={idx} stroke={m.isLikedByMe ? "red" : "gray"} />
+                                            <HeartCount>{m.likeCount || 0}</HeartCount>
+                                        </HeartContent>
+                                        <MessageTime isOwnMessage={isOwn}>
+                                            {formatTime(m.timestamp)}
+                                        </MessageTime>
+
                                 </MessageContent>
                             </MessageItem>
                         )
@@ -250,6 +267,24 @@ const ExitButton = styled.button`
         background-color: #e0e0e0;
     }
 `
+
+const HeartCount = styled.span`
+   padding-left: 2px;
+`
+
+const HeartContent = styled.div`
+    margin-top: 0.25rem;
+    padding: 5px 10px 5px 10px;
+    display: flex;
+    justify-content: space-around;
+    background-color: #f9f9f9;
+    align-items: end;
+    gap:0.25em;
+    cursor : pointer;
+    border-radius: 16px;
+    font-size: 14px;
+`
+
 const KickButton = styled.button`
     margin-left:8px;
     padding:4px 8px;
@@ -440,9 +475,9 @@ const MessageBubble = styled.div`
 `
 
 const MessageTime = styled.span`
+  margin-top: 0.25rem;
   font-size: 0.7rem;
   color: ${({ theme }) => theme.colors.textLight};
-  margin-top: 0.25rem;
   align-self: ${({ isOwnMessage }) => (isOwnMessage ? "flex-end" : "flex-start")};
 `
 

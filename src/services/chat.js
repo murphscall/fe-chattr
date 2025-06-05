@@ -303,6 +303,8 @@ export async function getChatRoomMessages(roomId) {
             timestamp: msg.createdAt,
             type: msg.type,                   // TEXT, NOTICE_JOIN, …
             isDeleted: msg.deleted ?? msg.isDeleted,
+            isLikedByMe: msg.likedByMe ?? false,
+            likeCount : msg.likeCount,
         };
     });
 }
@@ -357,4 +359,12 @@ export async function sendMessage(roomId, content, type = "TEXT") {
     }
 
     return message
+}
+
+export async function messageLike(roomId , msgId){
+    const response = await api.post(`http://localhost:8080/api/chats/${roomId}/msg/${msgId}/likes`)
+    const data = response.data
+    if (data.status !== "success") {
+        throw new Error(data.message || "메시지 전송에 실패했습니다")
+    }
 }
