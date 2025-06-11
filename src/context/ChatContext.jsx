@@ -14,6 +14,13 @@ const ChatContext = createContext(null)
  * 채팅 Context Provider
  */
 export const ChatProvider = ({ children }) => {
+    const initialPagination = {
+        page: 0,
+        size: 10,
+        totalElements: 0,
+        totalPages: 0,
+        last: false
+    }
     const { user } = useAuth()
     const [chatRooms, setChatRooms] = useState([])
     const [myChatRooms, setMyChatRooms] = useState([])
@@ -23,13 +30,10 @@ export const ChatProvider = ({ children }) => {
     const [messages, setMessages] = useState({})
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState(null)
-    const [pagination, setPagination] = useState({
-        page: 0,
-        size: 20,
-        totalElements: 0,
-        totalPages: 0,
-        last: true,
-    })
+    const [paginationAll, setPaginationAll] = useState(initialPagination)
+    const [paginationMy, setPaginationMy] = useState(initialPagination)
+    const [paginationHot, setPaginationHot] = useState(initialPagination)
+
 
 
     /**
@@ -51,7 +55,7 @@ export const ChatProvider = ({ children }) => {
                     setChatRooms((prev) => [...prev, ...result.chatRooms])
                 }
 
-                setPagination(result.pagination)
+                setPaginationAll(result.pagination)
             } catch (err) {
                 setError("채팅방 목록을 가져오는데 실패했습니다.")
                 console.error("채팅방 목록 조회 오류:", err)
@@ -77,7 +81,7 @@ export const ChatProvider = ({ children }) => {
                 } else {
                     setHotChatRooms((prev) => [...prev, ...result.chatRooms])
                 }
-                setPagination(result.pagination)
+                setPaginationHot(result.pagination)
 
             }catch (err){
                 setError("내 채팅방 목록을 가져오는데 실패했습니다.")
@@ -96,6 +100,7 @@ export const ChatProvider = ({ children }) => {
                 setIsLoading(true)
                 setError(null)
                 const result = await chatService.getCreateByMeChatRooms()
+                console.log(result)
                 setCreateByMeChatRooms(result)
             } catch (err) {
                 setError("내 채팅방 목록을 가져오는데 실패했습니다.")
@@ -125,7 +130,7 @@ export const ChatProvider = ({ children }) => {
                     setMyChatRooms((prev) => [...prev, ...result.chatRooms])
                 }
 
-                setPagination(result.pagination)
+                setPaginationMy(result.pagination)
             } catch (err) {
                 setError("내 채팅방 목록을 가져오는데 실패했습니다.")
                 console.error("내 채팅방 목록 조회 오류:", err)
@@ -222,6 +227,7 @@ export const ChatProvider = ({ children }) => {
                 // 새로 생성된 채팅방을 목록에 추가
                 setChatRooms((prev) => [createdRoom, ...prev])
                 setMyChatRooms((prev) => [createdRoom, ...prev])
+                setCreateByMeChatRooms((prev) => [createdRoom, ...prev])
 
                 return createdRoom.id
             } catch (err) {
@@ -440,7 +446,9 @@ export const ChatProvider = ({ children }) => {
             messages,
             isLoading,
             error,
-            pagination,
+            paginationAll,
+            paginationHot,
+            paginationMy,
             fetchChatRooms,
             fetchChatMembers,
             fetchCreateByMeChatRooms,
@@ -463,7 +471,9 @@ export const ChatProvider = ({ children }) => {
             messages,
             isLoading,
             error,
-            pagination,
+            paginationAll,
+            paginationHot,
+            paginationMy,
             fetchChatRooms,
             fetchChatMembers,
             fetchHotChatRooms,

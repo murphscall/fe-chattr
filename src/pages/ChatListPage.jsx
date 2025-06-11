@@ -30,7 +30,9 @@ const ChatListPage = () => {
         fetchCreateByMeChatRooms,
         fetchHotChatRooms,
         fetchMyChatRooms,
-        pagination,
+        paginationAll,
+        paginationMy,
+        paginationHot,
     } = useChat()
 
     const [searchTerm, setSearchTerm] = useState("")
@@ -42,26 +44,14 @@ const ChatListPage = () => {
     const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("전체")
     const [isCreatingRoom, setIsCreatingRoom] = useState(false)
 
-    // 탭 변경 시 해당 데이터 새로고침
     useEffect(() => {
-        if (activeTab === "my") {
-            if(myChatRooms.length === 0){
-                fetchMyChatRooms(0, 10)
-            }
-        }else if (activeTab === "hot"){
-            if(hotChatRooms.length === 0){
-                fetchHotChatRooms(0, 10);
-            }
-        }else if (activeTab === "me"){
-            if(createByMeChatRooms.length === 0){
-                fetchCreateByMeChatRooms()
-            }
-        }else {
-            if(chatRooms.length === 0){
-                fetchChatRooms(0, 10)
-            }
+        if (user) {
+            fetchChatRooms(0, 10)
+            fetchMyChatRooms(0, 10)
+            fetchCreateByMeChatRooms()
+            fetchHotChatRooms(0, 10)
         }
-    }, [activeTab])
+    }, [user])
 
     // 현재 탭에 따른 채팅방 목록 선택
     const currentRooms =
@@ -118,14 +108,14 @@ const ChatListPage = () => {
 
     // 더 많은 채팅방 로드 (무한 스크롤)
     const loadMoreRooms = () => {
-        if (!pagination.last && !isLoading) {
-            if (activeTab === "my") {
-                fetchMyChatRooms(pagination.page + 1, pagination.size)
-            } else if (activeTab === "hot") {
-                fetchHotChatRooms(pagination.page + 1, pagination.size)
-            } else {
-                fetchChatRooms(pagination.page + 1, pagination.size)
-            }
+        if (isLoading) return;
+
+        if (activeTab === "my" && !paginationMy.last) {
+            fetchMyChatRooms(paginationMy.page + 1, paginationMy.size)
+        } else if (activeTab === "hot" && !paginationHot.last) {
+            fetchHotChatRooms(paginationHot.page + 1, paginationHot.size)
+        } else if (activeTab === "all" && !paginationAll.last) {
+            fetchChatRooms(paginationAll.page + 1, paginationAll.size)
         }
     }
 
@@ -225,12 +215,22 @@ const ChatListPage = () => {
                         </RoomList>
 
                         {/* 더 보기 버튼 또는 로딩 표시 */}
-                        {!pagination.last && activeTab !== "me" && (
+                        {activeTab !== "me" && (
                             <LoadMoreContainer>
                                 {isLoading ? (
                                     <LoadingSpinner size={30} />
                                 ) : (
-                                    <LoadMoreButton onClick={loadMoreRooms}>더 많은 채팅방 보기</LoadMoreButton>
+                                    <>
+                                        {activeTab === "my" && !paginationMy.last && (
+                                            <LoadMoreButton onClick={loadMoreRooms}>더 많은 채팅방 보기</LoadMoreButton>
+                                        )}
+                                        {activeTab === "hot" && !paginationHot.last && (
+                                            <LoadMoreButton onClick={loadMoreRooms}>더 많은 채팅방 보기</LoadMoreButton>
+                                        )}
+                                        {activeTab === "all" && !paginationAll.last && (
+                                            <LoadMoreButton onClick={loadMoreRooms}>더 많은 채팅방 보기</LoadMoreButton>
+                                        )}
+                                    </>
                                 )}
                             </LoadMoreContainer>
                         )}

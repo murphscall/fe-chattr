@@ -83,6 +83,7 @@ export async function getCreateByMeChatRooms() {
         return chatRooms
     }catch (error) {
         console.log("인기 채팅방을 불러오지 못했습니다.",error)
+        return []
     }
 }
 
@@ -90,6 +91,7 @@ export async function getHotChatRooms(page = 0, size = 10) {
     try{
         const response = await api.get(`http://localhost:8080/api/chats/hot?page=${page}&size=${size}`, {})
         const data = response.data;
+        console.log("백엔드에서 인기 채팅방 목록 : " , data)
         if (data.status !== "success") {
             throw new Error(data.message || "내 채팅방 목록을 가져오는데 실패했습니다")
         }

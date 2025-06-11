@@ -179,7 +179,7 @@ const FeaturesPage = () => {
                                         <ChevronRight size={16} />
                                         <span>오프라인 상태에서도 메시지 수신 가능</span>
                                     </FeaturePoint>
-                                </FeaturePointList>
+                                </FeaturePointList>d
                             </DetailedFeatureDescription>
                         </DetailedFeatureContent>
                         <DetailedFeatureImage>
