@@ -7,4 +7,12 @@ export default defineConfig({
   define: {
     global: 'globalThis',
   },
+  server: {
+    host: '0.0.0.0',
+    port: process.env.PORT || 5173  // 5173으로 변경
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: process.env.PORT || 5173  // 5173으로 변경
+  }
 })
