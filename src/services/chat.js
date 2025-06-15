@@ -24,7 +24,7 @@ export async function getChatRooms(page = 0, size = 10) {
 
 
         const data = response.data
-        console.log("백엔드에서 받은 채팅방 목록:", data)
+
 
         if (data.status !== "success") {
             throw new Error(data.message || "채팅방 목록을 가져오는데 실패했습니다")
@@ -60,11 +60,11 @@ export async function getChatRooms(page = 0, size = 10) {
 }
 
 export async function getCreateByMeChatRooms() {
-    console.log("갑니다요청")
+
     try{
         const response = await api.get(`${API_URL}/api/chats/my`)
         const data = response.data;
-        console.log(data)
+
         if (data.status !== "success") {
             throw new Error(data.message || "내 채팅방 목록을 가져오는데 실패했습니다")
         }
@@ -83,7 +83,7 @@ export async function getCreateByMeChatRooms() {
 
         return chatRooms
     }catch (error) {
-        console.log("인기 채팅방을 불러오지 못했습니다.",error)
+
         return []
     }
 }
@@ -92,7 +92,7 @@ export async function getHotChatRooms(page = 0, size = 10) {
     try{
         const response = await api.get(`${API_URL}/api/chats/hot?page=${page}&size=${size}`, {})
         const data = response.data;
-        console.log("백엔드에서 인기 채팅방 목록 : " , data)
+
         if (data.status !== "success") {
             throw new Error(data.message || "내 채팅방 목록을 가져오는데 실패했습니다")
         }
@@ -120,7 +120,7 @@ export async function getHotChatRooms(page = 0, size = 10) {
             },
         }
     }catch (error) {
-        console.log("인기 채팅방을 불러오지 못했습니다.",error)
+
     }
 }
 
@@ -141,7 +141,7 @@ export async function getMyChatRooms(page = 0, size = 10) {
         })
 
         const data = response.data
-        console.log("백엔드에서 받은 나의 채팅방 목록 : " , data)
+
         if (data.status !== "success") {
             throw new Error(data.message || "내 채팅방 목록을 가져오는데 실패했습니다")
         }
@@ -196,7 +196,7 @@ export async function getMyChatRooms(page = 0, size = 10) {
  * @returns {Promise<Object>} 생성된 채팅방 정보
  */
 export async function createChatRoom(title, topic, description) {
-    console.log("채팅방 생성 요청 데이터:", { title, topic, description })
+
 
     const response = await api.post(`${API_URL}/api/chats`,
         {
@@ -204,7 +204,7 @@ export async function createChatRoom(title, topic, description) {
         }
     )
     const data = response.data
-    console.log("채팅방 생성 성공 응답:", data)
+
 
     if (data.status !== "success") {
         throw new Error(data.data || "채팅방 생성에 실패했습니다")
@@ -247,7 +247,7 @@ export async function getChatRoomMembers(roomId) {
     if (data.status !== "success") {
         throw new Error(data.message || "채팅방 유저 목록 불러오기에 실패했습니다." )
     }
-    console.log("챗멤버" , data)
+
 
     const members = data.data.map(member => ({
         id: member.userId,

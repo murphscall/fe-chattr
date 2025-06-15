@@ -92,7 +92,7 @@ export const AuthProvider = ({ children }) => {
      * 로그아웃
      */
     const logout = async () => {
-        console.log("로그아웃")
+
         try {
             setLoading(true)
             await authService.logout()

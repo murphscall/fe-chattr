@@ -41,7 +41,7 @@ class WebSocketService {
             // HTTP-only 쿠키를 사용하므로 여기서는 추가 헤더가 필요 없음
           },
           debug: (str) => {
-            console.log("STOMP: " + str)
+
           },
           reconnectDelay: 5000,
           heartbeatIncoming: 4000,
@@ -50,7 +50,7 @@ class WebSocketService {
 
         // 연결 성공 시 콜백
         this.client.onConnect = () => {
-          console.log("WebSocket 연결 성공")
+
           resolve()
         }
 
@@ -106,7 +106,7 @@ class WebSocketService {
       subscription.unsubscribe()
       this.subscriptions.delete(subscriptionId)
       this.messageHandlers.delete(subscriptionId)
-      console.log(`채팅방 ${chatId} 구독 해제`)
+
     }
   }
 
@@ -139,7 +139,7 @@ class WebSocketService {
         destination: "/pub/api/chats/messages/send",
         body: JSON.stringify(message),
       })
-      console.log("메시지 전송 성공:", message)
+
     } catch (error) {
       console.error("메시지 전송 오류:", error)
     }
@@ -153,19 +153,14 @@ class WebSocketService {
   handleIncomingMessage(chatId, stompMessage) {
     try {
       const raw = JSON.parse(stompMessage.body)
-      console.log("=== 받은 메시지 ===", raw)
+
 
       // 추방 메시지 특별 처리
       if (raw.type === "NOTICE_KICK" && raw.targetId) {
-        console.log(this.currentUser.userId)
-        console.log("추방 메시지 감지!", {
-          targetId: raw.targetId,
-          currentUserId: this.currentUser?.userId,
-          isMe: String(raw.targetUserId) === String(this.currentUser?.userId)
-        })
+
         // 내가 추방당한 경우 체크
         if (this.currentUser && String(raw.targetId) === String(this.currentUser.userId)) {
-          console.log("내가 추방당함! 3초 후 이동...")
+
           // 잠시 후 알림 표시 및 방 나가기
           setTimeout(() => {
             alert('채팅방에서 추방되었습니다.')
@@ -207,14 +202,14 @@ class WebSocketService {
   }
 
   handleKickOut(chatId) {
-    console.log("=== 추방 처리 시작 ===", chatId)
+
     // 해당 채팅방 구독 해제
     this.unsubscribeFromChatRoom(chatId)
-    console.log("채팅방 구독 해제 완료")
+
 
     // 채팅방 목록으로 이동
     if (typeof window !== 'undefined') {
-      console.log("페이지 이동 시도...")
+
       window.location.href = '/chats'
     }
   }
@@ -232,7 +227,7 @@ class WebSocketService {
       this.client.deactivate()
       this.client = null
       this.connectionPromise = null
-      console.log("WebSocket 연결 종료")
+
     }
   }
 

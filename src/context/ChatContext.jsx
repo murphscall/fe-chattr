@@ -100,7 +100,6 @@ export const ChatProvider = ({ children }) => {
                 setIsLoading(true)
                 setError(null)
                 const result = await chatService.getCreateByMeChatRooms()
-                console.log(result)
                 setCreateByMeChatRooms(result)
             } catch (err) {
                 setError("내 채팅방 목록을 가져오는데 실패했습니다.")
@@ -177,7 +176,7 @@ export const ChatProvider = ({ children }) => {
 
                 await chatService.exitChatRoom(roomId);
             }catch(err){
-                console.log(err)
+
             }finally {
                 setIsLoading(false);
             }
@@ -231,7 +230,7 @@ export const ChatProvider = ({ children }) => {
 
                 return createdRoom.id
             } catch (err) {
-                console.log(err.response.data.data)
+
                 setError(err.response.data.data)
                 console.error("채팅방 생성 오류:", err)
                 throw err
@@ -423,7 +422,7 @@ export const ChatProvider = ({ children }) => {
         const initWebSocket = async () => {
             try {
                 await webSocketService.init(user)
-                console.log("WebSocket 초기화 완료")
+
             } catch (error) {
                 console.error("WebSocket 초기화 오류:", error)
             }

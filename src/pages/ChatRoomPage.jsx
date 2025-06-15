@@ -69,7 +69,7 @@ const ChatRoomPage = () => {
         setNewMessage("")
     }
     const handleShowMembers = (roomId) =>{
-        console.log(roomId)
+
         setIsMemberListOpen(true)
         fetchChatMembers(roomId)
     }

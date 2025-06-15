@@ -76,7 +76,7 @@ export async function register(userData) {
  * 로그아웃 함수
  */
 export async function logout() {
-    console.log("로그아웃함수실행")
+
     const response = await fetch(`${API_URL}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
@@ -100,7 +100,7 @@ export async function getCurrentUser() {
         })
 
         const data = response.data
-        console.log("axios 데이터" , data)
+
         if (data.status !== "success") {
             return null
         }
