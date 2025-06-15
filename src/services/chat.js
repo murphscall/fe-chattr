@@ -10,10 +10,11 @@ import api from "./CommonAxiosSet.js";
  * @param {number} size 페이지 크기 (기본값: 20)
  * @returns {Promise<Object>} 채팅방 목록과 페이징 정보
  */
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 export async function getChatRooms(page = 0, size = 10) {
     try {
         // 백엔드 API 호출 (페이징 파라미터 추가)
-        const response = await api.get(`http://localhost:8080/api/chats/list?page=${page}&size=${size}`, {
+        const response = await api.get(`${API_URL}/api/chats/list?page=${page}&size=${size}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -61,7 +62,7 @@ export async function getChatRooms(page = 0, size = 10) {
 export async function getCreateByMeChatRooms() {
     console.log("갑니다요청")
     try{
-        const response = await api.get("http://localhost:8080/api/chats/my")
+        const response = await api.get(`${API_URL}/api/chats/my`)
         const data = response.data;
         console.log(data)
         if (data.status !== "success") {
@@ -89,7 +90,7 @@ export async function getCreateByMeChatRooms() {
 
 export async function getHotChatRooms(page = 0, size = 10) {
     try{
-        const response = await api.get(`http://localhost:8080/api/chats/hot?page=${page}&size=${size}`, {})
+        const response = await api.get(`${API_URL}/api/chats/hot?page=${page}&size=${size}`, {})
         const data = response.data;
         console.log("백엔드에서 인기 채팅방 목록 : " , data)
         if (data.status !== "success") {
@@ -131,7 +132,7 @@ export async function getHotChatRooms(page = 0, size = 10) {
  */
 export async function getMyChatRooms(page = 0, size = 10) {
     try {
-        const response = await api.get(`http://localhost:8080/api/chats/me?page=${page}&size=${size}`, {
+        const response = await api.get(`${API_URL}/api/chats/me?page=${page}&size=${size}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -197,7 +198,7 @@ export async function getMyChatRooms(page = 0, size = 10) {
 export async function createChatRoom(title, topic, description) {
     console.log("채팅방 생성 요청 데이터:", { title, topic, description })
 
-    const response = await api.post("http://localhost:8080/api/chats",
+    const response = await api.post(`${API_URL}/api/chats`,
         {
     title,topic,description : description || null,
         }
@@ -230,7 +231,7 @@ export async function createChatRoom(title, topic, description) {
  * @param {string} roomId 채팅방 ID
  */
 export async function joinChatRoom(roomId) {
-    const response = await api.post(`http://localhost:8080/api/chats/${roomId}/join`)
+    const response = await api.post(`${API_URL}/api/chats/${roomId}/join`)
 
     const data = response.data
 
@@ -241,7 +242,7 @@ export async function joinChatRoom(roomId) {
 
 
 export async function getChatRoomMembers(roomId) {
-    const response = await api.get(`/api/chats/${roomId}/members`)
+    const response = await api.get(`${API_URL}/api/chats/${roomId}/members`)
     const data = response.data
     if (data.status !== "success") {
         throw new Error(data.message || "채팅방 유저 목록 불러오기에 실패했습니다." )
@@ -258,7 +259,7 @@ export async function getChatRoomMembers(roomId) {
 }
 
 export async function exitChatRoom(roomId) {
-    const response = await api.post(`http://localhost:8080/api/chats/${roomId}/exit`)
+    const response = await api.post(`${API_URL}/api/chats/${roomId}/exit`)
     const data = response.data;
 
     if(data.status !== "success"){
@@ -312,7 +313,7 @@ export async function getChatRoomMessages(roomId) {
 }
 
 export async function kickUser(roomId, userId) {
-    const response = await api.post(`http://localhost:8080/api/chats/${roomId}/users/${userId}/kick `)
+    const response = await api.post(`${API_URL}/api/chats/${roomId}/users/${userId}/kick `)
     if(response.status !== 204){
         throw new Error("추방 실패")
     }
@@ -326,7 +327,7 @@ export async function kickUser(roomId, userId) {
  * @returns {Promise<Object>} 전송된 메시지 정보
  */
 export async function sendMessage(roomId, content, type = "TEXT") {
-    const response = await api.post("http://localhost:8080/api/messages", {
+    const response = await api.post(`${API_URL}/api/messages`, {
             chatId: Number.parseInt(roomId),
             content,
             type,
@@ -364,7 +365,7 @@ export async function sendMessage(roomId, content, type = "TEXT") {
 }
 
 export async function messageLike(roomId , msgId){
-    const response = await api.post(`http://localhost:8080/api/chats/${roomId}/msg/${msgId}/likes`)
+    const response = await api.post(`${API_URL}/api/chats/${roomId}/msg/${msgId}/likes`)
     const data = response.data
     if (data.status !== "success") {
         throw new Error(data.message || "메시지 전송에 실패했습니다")

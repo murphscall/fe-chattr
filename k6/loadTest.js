@@ -1,7 +1,7 @@
 // k6/loginLoadTest.js
 import http from 'k6/http';
 import { check } from 'k6';
-
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 export const options = {
     vus: 20,         // 10명 동시 로그인
     duration: '10s',   // 5초 동안 부하
@@ -21,7 +21,7 @@ export default function () {
     // 각 VU(Virtual User)가 자기 고유 번호로 계정 나눠 쓰기
     const user = users[__VU % users.length];
 
-    const url = 'http://localhost:8080/api/auth/login';
+    const url = `${API_URL}:8080/api/auth/login`;
 
     const payload = JSON.stringify({
         email: user.email,

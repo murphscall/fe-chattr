@@ -1,7 +1,6 @@
 /**
  * 인증 관련 API 호출을 처리하는 서비스
  */
-
 import api from "./CommonAxiosSet.js";
 
 /**
@@ -10,10 +9,11 @@ import api from "./CommonAxiosSet.js";
  * @param {string} password 사용자 비밀번호
  * @returns {Promise<Object>} 로그인된 사용자 정보
  */
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 export async function login(email, password) {
     const loginData = { email, password }
 
-    const response = await fetch("http://localhost:8080/api/auth/login", {
+    const response = await fetch(`${API_URL}/api/auth/login"`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -54,7 +54,7 @@ export async function register(userData) {
         phone: userData.phone,
     }
 
-    const response = await fetch("http://localhost:8080/api/users", {
+    const response = await fetch(`${API_URL}/api/users`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -77,7 +77,7 @@ export async function register(userData) {
  */
 export async function logout() {
     console.log("로그아웃함수실행")
-    const response = await fetch("http://localhost:8080/api/auth/logout", {
+    const response = await fetch(`${API_URL}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
     })
@@ -95,7 +95,7 @@ export async function logout() {
  */
 export async function getCurrentUser() {
     try {
-        const response = await api.get("http://localhost:8080/api/auth/authentication", {
+        const response = await api.get(`${API_URL}/api/auth/authentication`, {
             credentials: "include",
         })
 
@@ -129,7 +129,7 @@ export async function getCurrentUser() {
  */
 export async function refreshToken() {
     try {
-        const response = await fetch("http://localhost:8080/api/auth/refresh", {
+        const response = await fetch(`${API_URL}/api/auth/refresh`, {
             method: "POST",
             credentials: "include",
         })

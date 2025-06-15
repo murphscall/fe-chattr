@@ -32,10 +32,11 @@ class WebSocketService {
     }
 
     this.connectionPromise = new Promise((resolve, reject) => {
+      const API_URL = import.meta.env.VITE_API_BASE_URL;
       try {
         // STOMP 클라이언트 생성
         this.client = new Client({
-          webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
+          webSocketFactory: () => new SockJS(`${API_URL}/ws`),
           connectHeaders: {
             // HTTP-only 쿠키를 사용하므로 여기서는 추가 헤더가 필요 없음
           },

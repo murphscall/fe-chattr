@@ -34,7 +34,7 @@ const SignupPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const verificationCodeRef = useRef(null)
     const [signupSuccess, setSignupSuccess] = useState(false)
-
+    const API_URL = import.meta.env.VITE_API_BASE_URL;
     // 타이머 관련 상태와 함수 추가 (useState 임포트 아래에 추가)
     const [timeRemaining, setTimeRemaining] = useState(null)
     const [timerId, setTimerId] = useState(null)
@@ -156,7 +156,7 @@ const SignupPage = () => {
             setVerificationMessage("")
 
             // 서버에 인증 코드 요청 API 호출
-            const response = await fetch("http://localhost:8080/api/email/send", {
+            const response = await fetch(`${API_URL}/api/email/send`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -201,7 +201,7 @@ const SignupPage = () => {
             setVerificationMessage("")
 
             // 서버에 인증 코드 확인 API 호출
-            const response = await fetch("http://localhost:8080/api/email/verify", {
+            const response = await fetch(`${API_URL}/api/email/verify`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

@@ -10,6 +10,7 @@ import { useAuth } from "../context/AuthContext"
 import { MessageSquare, ChevronRight, Mail, Lock, AlertCircle } from "lucide-react"
 
 const LoginPage = () => {
+    const API_URL = import.meta.env.VITE_API_BASE_URL;
     const navigate = useNavigate()
     const { login, loading } = useAuth()
     const [email, setEmail] = useState("")
@@ -47,7 +48,7 @@ const LoginPage = () => {
 
     const handleSocialLogin = (provider) => {
         // 소셜 로그인은 리다이렉트 방식으로 처리
-        window.location.href = `http://localhost:8080/oauth2/authorization/${provider}`
+        window.location.href = `${API_URL}/oauth2/authorization/${provider}`
     }
 
     return (
